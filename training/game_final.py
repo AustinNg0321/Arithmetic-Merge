@@ -47,7 +47,7 @@ def collapse_list_left(lst: list[str], operations: list[str] = ["+", "-", "*"]) 
             lst[i] not in operations and
             lst[i + 1] in operations and
             lst[i + 2] not in operations):
-            result.append(evaluate(int(lst[i]), lst[i + 1], int(lst[i + 2])))
+            result.append(str(evaluate(int(lst[i]), lst[i + 1], int(lst[i + 2]))))
             i += 3
         else:
             result.append(lst[i])
@@ -65,7 +65,7 @@ def collapse_list_right(lst: list[str], operations: list[str] = ["+", "-", "*"])
             lst[i] not in operations and
             lst[i - 1] in operations and
             lst[i - 2] not in operations):
-            result.append(evaluate(int(lst[i - 2]), lst[i - 1], int(lst[i])))
+            result.append(str(evaluate(int(lst[i - 2]), lst[i - 1], int(lst[i]))))
             i -= 3
         else:
             result.append(lst[i])

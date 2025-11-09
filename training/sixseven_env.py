@@ -14,22 +14,18 @@ class SixSevenEnv(gym.Env):
     - Penalty for invalid moves
     """
 
-    metadata = {"render_modes": ["human"]}
-
-    def __init__(self, num_rows: int = 6, num_cols: int = 7, render_mode=None):
+    def __init__(self, num_rows: int = 6, num_cols: int = 7):
         """
         Initialize the environment.
 
         Args:
             num_rows: Number of rows in the game grid
             num_cols: Number of columns in the game grid
-            render_mode: Rendering mode (currently supports "human")
         """
         super().__init__()
 
         self.num_rows = num_rows
         self.num_cols = num_cols
-        self.render_mode = render_mode
         self.game = Game(num_rows, num_cols)
 
         # Action space: 0=up, 1=down, 2=left, 3=right
@@ -112,18 +108,14 @@ class SixSevenEnv(gym.Env):
         """
         self.steps += 1
 
-        # Get valid moves before action
         valid_moves = self.game.get_valid_moves()
         move_name = self.action_map[action]
 
         reward = 0.0
 
-        # Check if action is valid
         if move_name not in valid_moves:
-            # Invalid move penalty
-            reward = -0.1
+            reward = -0.1 # invalid move penalty
         else:
-            # Valid move, give small positive reward
             reward = 0.01
 
             # Execute the move
@@ -161,41 +153,27 @@ class SixSevenEnv(gym.Env):
 
     def render(self):
         """Render the current game state."""
-        if self.render_mode == "human":
-            print(self.game)
+        print(self.game)
 
     def close(self):
         """Clean up resources."""
         pass
 
 
-def create_env(num_rows: int = 6, num_cols: int = 7) -> SixSevenEnv:
-    """
-    Factory function to create a SixSevenEnv instance.
-
-    Args:
-        num_rows: Number of rows in the game grid
-        num_cols: Number of columns in the game grid
-
-    Returns:
-        SixSevenEnv instance
-    """
-    return SixSevenEnv(num_rows, num_cols)
-
-
 if __name__ == "__main__":
     # Test the environment
-    env = create_env()
+    env = SixSevenEnv()
     obs, info = env.reset()
     print("Initial observation shape:", obs.shape)
     print("Initial observation:", obs)
     print("Valid moves:", info["valid_moves"])
 
     # Run a few random steps
-    for _ in range(5):
+    for _ in range(100):
         action = env.action_space.sample()
         obs, reward, terminated, truncated, info = env.step(action)
         print(f"Action: {env.action_map[action]}, Reward: {reward}, Valid moves: {info['valid_moves']}")
+        print(env.render())
 
         if terminated or truncated:
             print("Episode ended")
