@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, jsonify, render_template, request, url_for
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
@@ -18,6 +18,9 @@ class GameState:
     def start(self):
         self._has_started = True
 
+    def reset(self):
+        self._has_started = False
+
     def get_game(self):
         return self._game
 
@@ -26,16 +29,17 @@ class GameState:
 
 game = GameState()
 
-@app.route("/")
-def home():
+@app.route("/", methods=["GET"])
+def index():
     return render_template("index.html")
 
 # Solo mode
-@app.get("/solo")
-def get_board():
+@app.route("/solo", methods=["GET"])
+def get_solo():
+    game.reset()
     return render_template("solo.html")
 
-@app.post("/start")
+@app.route("/start", methods=["POST"])
 def start():
     if not game.has_started():
         game.start()
@@ -43,7 +47,7 @@ def start():
     game.set_game(GameManager(6, 7))
     return game.get_game().to_dict()
 
-@app.post("/move/<direction>")
+@app.route("/move/<direction>", methods=["POST"])
 def make_move(direction):
     if not game.has_started():
         return jsonify({"error": "No active game"}), 400

@@ -1,39 +1,22 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-</head>
-<body>
-    <!-- The board state -->
+{% extends "base.html" %}
+
+{% block head %}
+<title>Solo Mode</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/solo.css') }}">
+{% endblock %}
+
+{% block body %}
     <div>
         <p id="board"></p>
     </div>
-
     <div>
         <button id="up" onclick="move('up')">Up</button>
         <button id="down" onclick="move('down')">Down</button>
         <button id="left" onclick="move('left')">Left</button>
         <button id="right" onclick="move('right')">Right</button>
     </div>
-
     <div>
         <button id="start" onclick="start()">Start/Restart</button>
     </div>
-
-    <script>
-        async function start() {
-            const response = await fetch("/start", { method: "POST" });
-            const data = await response.json();
-            document.getElementById("board").textContent = JSON.stringify(data);
-        }
-
-        async function move(direction) {
-            const response = await fetch(`/move/${direction}`, { method: "POST" });
-            const data = await response.json();
-            document.getElementById("board").textContent = JSON.stringify(data);
-        }
-    </script>
-</body>
-</html>
+    <script src="{{ url_for('static', filename='js/solo.js') }}"></script>
+{% endblock %}
