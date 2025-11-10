@@ -1,31 +1,15 @@
-from flask import Flask, jsonify, render_template, request, url_for
+from flask import Flask, jsonify, render_template, request, url_for, redirect
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from backend.game_manager import GameManager
+from backend.game_manager import GameManager, GameState
+from flask_sqlalchemy import SQLAlchemy
 
 app = Flask(__name__)
 
-# Gets rid of any scope problems
-class GameState:
-    def __init__(self):
-        self._game = None
-        self._has_started = False
-    
-    def has_started(self):
-        return self._has_started
-
-    def start(self):
-        self._has_started = True
-
-    def reset(self):
-        self._has_started = False
-
-    def get_game(self):
-        return self._game
-
-    def set_game(self, game):
-        self._game = game
+# Start with SQLite
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///info.db"
+db = SQLAlchemy(app) 
 
 game = GameState()
 
