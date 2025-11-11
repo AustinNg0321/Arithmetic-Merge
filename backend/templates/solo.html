@@ -7,7 +7,7 @@
 
 {% block body %}
     <div>
-        <p id="board"></p>
+        <p id="board">{{ game }}</p>
     </div>
     <div>
         <button id="up" onclick="move('up')">Up</button>
@@ -16,7 +16,10 @@
         <button id="right" onclick="move('right')">Right</button>
     </div>
     <div>
-        <button id="start" onclick="start()">Start/Restart</button>
+        <button id="restart" onclick="restart()">Restart</button>
+    </div>
+    <div>
+        <a href="./">Home</button>
     </div>
     <script src="{{ url_for('static', filename='js/solo.js') }}"></script>
 {% endblock %}

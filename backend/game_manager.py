@@ -12,6 +12,16 @@ class GameManager():
         self._state = "In Progress"
         self._round_num = 1
         self._valid_moves = self._game.get_valid_moves()
+    
+    def restart(self, num_rows: int, num_cols: int) -> None:
+        self._game = Game(num_rows, num_cols)
+        self._game.generate_tiles()
+        self._state = "In Progress"
+        self._round_num = 1
+        self._valid_moves = self._game.get_valid_moves()
+
+    def get_state(self):
+        return self._state
 
     def to_dict(self):
         return {
@@ -48,25 +58,3 @@ class GameManager():
                 self._valid_moves = self._game.get_valid_moves()
                 if self._valid_moves == []:
                     self._state = "Lost"
-
-
-# Gets rid of any scope problems
-class GameState:
-    def __init__(self):
-        self._game_manager = None
-        self._has_started = False
-    
-    def has_started(self):
-        return self._has_started
-
-    def start(self):
-        self._has_started = True
-
-    def reset(self):
-        self._has_started = False
-
-    def get_game(self):
-        return self._game_manager
-
-    def set_game(self, game_manager):
-        self._game_manager = game_manager

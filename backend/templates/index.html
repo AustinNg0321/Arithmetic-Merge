@@ -3,6 +3,9 @@
 {% block head %}<title>Home</title>{% endblock %}
 
 {% block body %}
-    <p>Hello World!</p>
+    <div class="user">
+        <p>{{ user_id }}</p>
+        <p>{{ wins }} / {{ losses }} / {{ abandoned }}</p>
+    </div>
     <a href="./solo">Solo</a>
 {% endblock %}
