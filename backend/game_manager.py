@@ -20,20 +20,32 @@ class GameManager():
         self._round_num = 1
         self._valid_moves = self._game.get_valid_moves()
 
+    def get_game(self):
+        return self._game
+
     def get_state(self):
         return self._state
+    
+    def set_round(self, round_num: int) -> None:
+        self._round_num = round_num
+
+    def set_state(self, state: str) -> None:
+        self._state = state
+    
+    def update_valid_moves(self) -> None:
+        self._valid_moves = self._game.get_valid_moves()
 
     def to_dict(self):
         return {
-            "Grid": self._game._grid,
-            "Rows": self._game._num_rows,
-            "Columns": self._game._num_cols, 
-            "Included Operations": self._game._generated_operations,
-            "Operator spawn rate": self._game._prob_operations,
-            "Included Digits": self._game._generated_digits,
-            "Generated Tiles/Turn": self._game._num_generated_tiles,
-            "Round": self._round_num,
-            "State": self._state
+            "grid": self._game._grid,
+            "rows": self._game._num_rows,
+            "columns": self._game._num_cols, 
+            "included_operations": self._game._generated_operations,
+            "operator_spawn_rate": self._game._prob_operations,
+            "included_digits": self._game._generated_digits,
+            "generated_tiles_per_turn": self._game._num_generated_tiles,
+            "round": self._round_num,
+            "state": self._state
         }
 
     def move(self, direction: str) -> None:

@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, render_template, request, url_for, redirect, session, abort
+from datetime import timedelta, datetime
 import uuid
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
@@ -8,6 +9,8 @@ from backend.game_manager import GameManager
 
 app = Flask(__name__)
 
+# This limit may get capped in some browsers
+app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=365*1000)
 
 # Use SQLite
 from flask_sqlalchemy import SQLAlchemy
@@ -21,21 +24,30 @@ db = SQLAlchemy(app)
 load_dotenv()
 app.secret_key = os.getenv("SECRET_KEY")
 
-# the current solo game is lost if the server restarts!
-game = GameManager(6, 7)
+def dict_to_game(game_dict):
+    grid = game_dict["grid"]
+    round_num = game_dict["round"]
+    state = game_dict["state"]
+    cur_game = GameManager(6, 7)
+    cur_game.get_game().set_game(grid)
+    cur_game.set_round(round_num)
+    cur_game.set_state(state)
+    cur_game.update_valid_moves()
+    return cur_game
 
-def generate_user_id():
+def generate_user_id() -> str:
     return str(uuid.uuid4())
 
+# session is permanent unless it expires, the user deletes cookie manually, or the server restarts 
 @app.before_request
 def ensure_session():
     if "user_id" not in session:
         session["user_id"] = generate_user_id()
-        session["current_solo_game"] = game.to_dict()
+        session["current_solo_game"] = GameManager(6, 7).to_dict()
         session["wins"] = 0
         session["losses"] = 0
         session["abandoned"] = 0
-        session.permanent = True # session is permanent unless user deletes cookie manually or server restarts
+        session.permanent = True 
 
 
 @app.route("/", methods=["GET"])
@@ -46,9 +58,6 @@ def index():
     abandoned = session["abandoned"]
     return render_template("index.html", user_id=user_id, wins=wins, losses=losses, abandoned=abandoned)
 
-def update_solo_game():
-    session["current_solo_game"] = game.to_dict()
-
 # Solo mode
 @app.route("/solo", methods=["GET"])
 def get_solo():
@@ -57,23 +66,25 @@ def get_solo():
 
 @app.route("/restart", methods=["POST"])
 def restart():
+    game = dict_to_game(session["current_solo_game"])
     if game.get_state() == "In Progress":
         session["abandoned"] += 1
 
     game.restart(6, 7)
-    update_solo_game()
-    return game.to_dict()
+    session["current_solo_game"] = game.to_dict()
+    return session["current_solo_game"]
 
 @app.route("/move/<direction>", methods=["POST"])
 def make_move(direction):
+    game = dict_to_game(session["current_solo_game"])
     if game.get_state() == "In Progress":
         game.move(direction)
-        update_solo_game()
+        session["current_solo_game"] = game.to_dict()
         if game.get_state() == "Won":
             session["wins"] += 1
         if game.get_state() == "Lost":
             session["losses"] += 1
-        return game.to_dict()
+        return session["current_solo_game"]
     abort(400)
 
 if __name__ == '__main__':

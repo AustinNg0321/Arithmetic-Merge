@@ -108,6 +108,9 @@ class Game:
             board += cur_row
         return board
 
+    def set_game(self, grid) -> None:
+        self._grid = grid
+
     def generate_tiles(self) -> None:
         num_blank_spaces = len(self._blank_spaces)
         num_tiles_to_generate = min(num_blank_spaces, self._num_generated_tiles)
