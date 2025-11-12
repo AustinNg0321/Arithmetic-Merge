@@ -1,8 +1,12 @@
 import random
-import sys, os
+import sys
+import os
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-from training.game import Game
+training_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'training'))
+if training_path not in sys.path:
+    sys.path.append(training_path)
+
+from game import Game
 
 class GameManager():
 
