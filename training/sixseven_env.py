@@ -55,7 +55,7 @@ class SixSevenEnv(gym.Env):
             return [int(cell_value) % 500, 0] # don't understand how still exceeds 500
         except ValueError:
             cell_value = str(cell_value)
-            if cell_value == "":
+            if cell_value == "": # change this
                 return [0, 1]
             elif cell_value == "+":
                 return [0, 2]

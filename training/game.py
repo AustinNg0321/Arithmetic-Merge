@@ -1,24 +1,30 @@
 import random
 
-def construct_grid(num_rows: int, num_cols: int, item: str) -> list[list[str]]:
+# Constants for operations - NEED TO CHANGE IF CHANGING THE MAXIMUM/MINIMUM VALUES
+ADDITION = 1001
+SUBTRACTION = 1002
+MULTIPLICATION = 1003
+SPACE = 1004
+OPERATORS = [ADDITION, SUBTRACTION, MULTIPLICATION]
+
+def construct_grid(num_rows: int, num_cols: int, item: int) -> list[list[int]]:
     return [[item for j in range(num_cols)] for i in range(num_rows)]
 
-def evaluate(num_1: int, operator: str, num_2: int) -> int:
-    match (operator):
-        case "+":
-            return num_1 + num_2
-        case "-":
-            return num_1 - num_2
-        case "*":
-            return num_1 * num_2
-        case _:
-            return 0
+def evaluate(num_1: int, operator: int, num_2: int) -> int:
+    if operator == ADDITION:
+        return num_1 + num_2
+    elif operator == SUBTRACTION:
+        return num_1 - num_2
+    elif operator == MULTIPLICATION:
+        return num_1 * num_2
+    else:
+        return 0
 
-def remove_extra_spaces(lst: list[str]) -> list[str]:
-    return [lst[i] for i in range(len(lst)) if lst[i] != ""]
+def remove_extra_spaces(lst: list[int]) -> list[int]:
+    return [lst[i] for i in range(len(lst)) if lst[i] != SPACE]
 
 # lst should have no blank spaces
-def collapse_operators(lst: list[str], operations: list[str]) -> list[str]:
+def collapse_operators(lst: list[int], operations: list[int]) -> list[int]:
     result = []
     i = 0
 
@@ -37,7 +43,7 @@ def collapse_operators(lst: list[str], operations: list[str]) -> list[str]:
     return result
 
 # lst should have no blank spaces
-def collapse_list_left(lst: list[str], operations: list[str] = ["+", "-", "*"]) -> list[str]:
+def collapse_list_left(lst: list[int], operations: list[int] = OPERATORS) -> list[int]:
     lst = collapse_operators(lst, operations)
     result = []
     i = 0
@@ -47,7 +53,7 @@ def collapse_list_left(lst: list[str], operations: list[str] = ["+", "-", "*"]) 
             lst[i] not in operations and
             lst[i + 1] in operations and
             lst[i + 2] not in operations):
-            result.append(str(evaluate(int(lst[i]), lst[i + 1], int(lst[i + 2]))))
+            result.append(evaluate(lst[i], lst[i + 1], lst[i + 2]))
             i += 3
         else:
             result.append(lst[i])
@@ -55,7 +61,7 @@ def collapse_list_left(lst: list[str], operations: list[str] = ["+", "-", "*"]) 
 
     return result
 
-def collapse_list_right(lst: list[str], operations: list[str] = ["+", "-", "*"]) -> list[str]:
+def collapse_list_right(lst: list[int], operations: list[int] = OPERATORS) -> list[int]:
     lst = collapse_operators(lst, operations)
     result = []
     i = len(lst) - 1
@@ -65,7 +71,7 @@ def collapse_list_right(lst: list[str], operations: list[str] = ["+", "-", "*"])
             lst[i] not in operations and
             lst[i - 1] in operations and
             lst[i - 2] not in operations):
-            result.append(str(evaluate(int(lst[i - 2]), lst[i - 1], int(lst[i]))))
+            result.append(evaluate(lst[i - 2], lst[i - 1], lst[i]))
             i -= 3
         else:
             result.append(lst[i])
@@ -74,27 +80,28 @@ def collapse_list_right(lst: list[str], operations: list[str] = ["+", "-", "*"])
     result.reverse()
     return result
 
-def out_of_bounds(grid: list[list[str]], upper_bound: int = 500, lower_bound: int = -500) -> bool:
+def out_of_bounds(grid: list[list[int]], upper_bound: int = 500, lower_bound: int = -500) -> bool:
     return any([any([int(el) < lower_bound or int(el) > upper_bound
-                     for el in row if (el != "" and el not in "+-*")]) for row in grid])
+                     for el in row if (el != SPACE and el not in OPERATORS)]) for row in grid])
 
 class Game:
+    """Class representing the SixSeven game."""
 
     def __add_blank_spaces(self) -> list[tuple[int, int]]:
         return [(i, j) for i in range(self._num_rows) for j in range(self._num_cols)]
 
     def __update_blank_spaces(self) -> None:
         self._blank_spaces = [(i, j) for i in range(self._num_rows) for j in range(self._num_cols)
-                              if self._grid[i][j] == ""]
+                              if self._grid[i][j] == SPACE]
 
     def __init__(self, num_rows: int, num_cols: int):
-        self._grid = construct_grid(num_rows, num_cols, "")
+        self._grid = construct_grid(num_rows, num_cols, SPACE)
         self._num_rows = num_rows
         self._num_cols = num_cols
         self._blank_spaces = self.__add_blank_spaces()
-        self._generated_operations = ["+", "-", "*"]
+        self._generated_operations = OPERATORS.copy()
         self._prob_operations = 0.67
-        self._generated_digits = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]
+        self._generated_digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         self._num_generated_tiles = 2 # set this to somewhere between 2 to 4
         self._round_num = 1
 
@@ -103,10 +110,22 @@ class Game:
         for i in range (self._num_rows):
             cur_row = ""
             for j in range (self._num_cols):
-                cur_row += f"| {self._grid[i][j]:^3} "
+                cur_row += f"| {self.character_str(self._grid[i][j]):^3} "
             cur_row += "|\n"
             board += cur_row
         return board
+
+    def character_str(self, character: int) -> str:
+        if character == ADDITION:
+            return "+"
+        elif character == SUBTRACTION:
+            return "-"
+        elif character == MULTIPLICATION:
+            return "*"
+        elif character == SPACE:
+            return " "
+        else: 
+            return int(character)
 
     def generate_tiles(self) -> None:
         num_blank_spaces = len(self._blank_spaces)
@@ -124,49 +143,49 @@ class Game:
             num_blank_spaces -= 1
             self._blank_spaces.pop(cur_index)
 
-    def left(self) -> list[list[str]]:
+    def left(self) -> list[list[int]]:
         new_grid = []
         for i in range(self._num_rows):
             collapsed_row = collapse_list_left(remove_extra_spaces(self._grid[i]))
-            padding = ["" for j in range(self._num_cols - len(collapsed_row))]
+            padding = [SPACE for j in range(self._num_cols - len(collapsed_row))]
             new_grid.append(collapsed_row + padding)
         return new_grid
 
-    def right(self) -> list[list[str]]:
+    def right(self) -> list[list[int]]:
         new_grid = []
         for i in range(self._num_rows):
             collapsed_row = collapse_list_right(remove_extra_spaces(self._grid[i]))
-            padding = ["" for j in range(self._num_cols - len(collapsed_row))]
+            padding = [SPACE for j in range(self._num_cols - len(collapsed_row))]
             new_grid.append(padding + collapsed_row)
         return new_grid
 
-    def up(self) -> list[list[str]]:
-        new_grid = construct_grid(self._num_rows, self._num_cols, "")
+    def up(self) -> list[list[int]]:
+        new_grid = construct_grid(self._num_rows, self._num_cols, SPACE)
 
         for j in range(self._num_cols):
             orig_col = [self._grid[i][j] for i in range(self._num_rows)]
             collapsed_col = collapse_list_left(remove_extra_spaces(orig_col))
-            padding = ["" for i in range(self._num_rows - len(collapsed_col))]
+            padding = [SPACE for i in range(self._num_rows - len(collapsed_col))]
             cur_col = collapsed_col + padding
             for i in range(self._num_rows):
                 new_grid[i][j] = cur_col[i]
 
         return new_grid
 
-    def down(self) -> list[list[str]]:
-        new_grid = construct_grid(self._num_rows, self._num_cols, "")
+    def down(self) -> list[list[int]]:
+        new_grid = construct_grid(self._num_rows, self._num_cols, SPACE)
 
         for j in range(self._num_cols):
             orig_col = [self._grid[i][j] for i in range(self._num_rows)]
             collapsed_col = collapse_list_right(remove_extra_spaces(orig_col))
-            padding = ["" for i in range(self._num_rows - len(collapsed_col))]
+            padding = [SPACE for i in range(self._num_rows - len(collapsed_col))]
             cur_col = padding + collapsed_col
             for i in range(self._num_rows):
                 new_grid[i][j] = cur_col[i]
 
         return new_grid
 
-    def get_valid_moves(self) -> list[str]:
+    def get_valid_moves(self) -> list[int]:
         valid_moves = []
         if self.up() != self._grid:
             valid_moves.append("up")
@@ -205,7 +224,7 @@ class Game:
     def is_won(self) -> bool:
         for i in range (self._num_rows):
             for j in range (self._num_cols):
-                if self._grid[i][j] == "67":
+                if self._grid[i][j] == 67:
                     return True
         return False
 
@@ -248,7 +267,7 @@ def human_play(num_rows: int, num_cols: int) -> bool:
         else:
             round_num += 1
 
-def random_bot(grid: list[list[str]], valid_moves: list[str]) -> None:
+def random_bot(grid: list[list[int]], valid_moves: list[str]) -> None:
     return random.choice(valid_moves)
 
 def auto_play(num_rows: int, num_cols: int, max_turns_per_game : int = 1000, model: callable = random_bot) -> list[int]:
