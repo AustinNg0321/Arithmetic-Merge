@@ -126,6 +126,8 @@ class Game:
             return " "
         else: 
             return int(character)
+    def set_game(self, grid) -> None:
+        self._grid = grid
 
     def generate_tiles(self) -> None:
         num_blank_spaces = len(self._blank_spaces)

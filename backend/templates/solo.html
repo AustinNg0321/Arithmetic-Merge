@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block head %}
+    <title>Solo Mode</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/solo.css') }}">
+{% endblock %}
+
+{% block body %}
+    <div>
+        <p id="board">{{ game }}</p>
+    </div>
+    <div>
+        <button id="up" onclick="move('up')">Up</button>
+        <button id="down" onclick="move('down')">Down</button>
+        <button id="left" onclick="move('left')">Left</button>
+        <button id="right" onclick="move('right')">Right</button>
+    </div>
+    <div>
+        <button id="restart" onclick="restart()">Restart</button>
+    </div>
+    <div>
+        <a href="./">Home</button>
+    </div>
+    <script src="{{ url_for('static', filename='js/solo.js') }}"></script>
+{% endblock %}
