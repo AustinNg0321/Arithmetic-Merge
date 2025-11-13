@@ -81,8 +81,12 @@ def collapse_list_right(lst: list[int], operations: list[int] = OPERATORS) -> li
     return result
 
 def out_of_bounds(grid: list[list[int]], upper_bound: int = 500, lower_bound: int = -500) -> bool:
-    return any([any([int(el) < lower_bound or int(el) > upper_bound
-                     for el in row if (el != SPACE and el not in OPERATORS)]) for row in grid])
+    for row in grid:
+        for el in row:
+            if el != SPACE and el not in OPERATORS:
+                if int(el) < lower_bound or int(el) > upper_bound:
+                    return True
+    return False
 
 class Game:
     """Class representing the SixSeven game."""
@@ -149,7 +153,7 @@ class Game:
         new_grid = []
         for i in range(self._num_rows):
             collapsed_row = collapse_list_left(remove_extra_spaces(self._grid[i]))
-            padding = [SPACE for j in range(self._num_cols - len(collapsed_row))]
+            padding = [SPACE] * (self._num_cols - len(collapsed_row))
             new_grid.append(collapsed_row + padding)
         return new_grid
 
@@ -157,7 +161,7 @@ class Game:
         new_grid = []
         for i in range(self._num_rows):
             collapsed_row = collapse_list_right(remove_extra_spaces(self._grid[i]))
-            padding = [SPACE for j in range(self._num_cols - len(collapsed_row))]
+            padding = [SPACE] * (self._num_cols - len(collapsed_row))
             new_grid.append(padding + collapsed_row)
         return new_grid
 
@@ -167,7 +171,7 @@ class Game:
         for j in range(self._num_cols):
             orig_col = [self._grid[i][j] for i in range(self._num_rows)]
             collapsed_col = collapse_list_left(remove_extra_spaces(orig_col))
-            padding = [SPACE for i in range(self._num_rows - len(collapsed_col))]
+            padding = [SPACE] * (self._num_rows - len(collapsed_col))
             cur_col = collapsed_col + padding
             for i in range(self._num_rows):
                 new_grid[i][j] = cur_col[i]
@@ -180,7 +184,7 @@ class Game:
         for j in range(self._num_cols):
             orig_col = [self._grid[i][j] for i in range(self._num_rows)]
             collapsed_col = collapse_list_right(remove_extra_spaces(orig_col))
-            padding = [SPACE for i in range(self._num_rows - len(collapsed_col))]
+            padding = [SPACE] * (self._num_rows - len(collapsed_col))
             cur_col = padding + collapsed_col
             for i in range(self._num_rows):
                 new_grid[i][j] = cur_col[i]
@@ -189,13 +193,13 @@ class Game:
 
     def get_valid_moves(self) -> list[int]:
         valid_moves = []
-        if self.up() != self._grid:
+        if self.grid.up() != self._grid:
             valid_moves.append("up")
-        if self.down() != self._grid:
+        if self.grid.down() != self._grid:
             valid_moves.append("down")
-        if self.left() != self._grid:
+        if self.grid.left() != self._grid:
             valid_moves.append("left")
-        if self.right() != self._grid:
+        if self.grid.right() != self._grid:
             valid_moves.append("right")
         return valid_moves
 
@@ -224,11 +228,7 @@ class Game:
             self.__update_blank_spaces()
 
     def is_won(self) -> bool:
-        for i in range (self._num_rows):
-            for j in range (self._num_cols):
-                if self._grid[i][j] == 67:
-                    return True
-        return False
+        return any(self._grid[i][j] == 67 for i in range(self._num_rows) for j in range(self._num_cols))
 
     def is_lost(self) -> bool:
         return not self.is_won() and (len(self.get_valid_moves()) == 0 or out_of_bounds(self._grid))
