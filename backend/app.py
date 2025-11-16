@@ -4,9 +4,12 @@ from datetime import timedelta
 from dotenv import load_dotenv
 # from flask_seasurf import SeaSurf
 from flask_talisman import Talisman
+from flask_cors import CORS
 import os
 
 app = Flask(__name__)
+# allows frontend to call API
+CORS(app, supports_credentials=True)
 
 # Use client-side Flask sessions for non-sensitive data
 # A session should store data for id, current game, and statistics (wins/losses/abandoned games, and maybe time/moves taken)
