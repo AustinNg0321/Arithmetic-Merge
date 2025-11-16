@@ -80,7 +80,7 @@ def collapse_list_right(lst: list[int], operations: list[int] = OPERATORS) -> li
     result.reverse()
     return result
 
-def out_of_bounds(grid: list[list[int]], upper_bound: int = 500, lower_bound: int = -500) -> bool:
+def out_of_bounds(grid: list[list[int]], upper_bound: int = 1000, lower_bound: int = -1000) -> bool:
     for row in grid:
         for el in row:
             if el != SPACE and el not in OPERATORS:

@@ -96,6 +96,7 @@ class SixSevenEnv(gym.Env):
 
         observation = self._get_observation()
         info = self._get_info()
+        info["win"] = 0
 
         return observation, info
 
@@ -142,12 +143,11 @@ class SixSevenEnv(gym.Env):
         # Get new observation
         observation = self._get_observation()
         info = self._get_info()
+        info["win"] = 0
 
         # Check terminal conditions
         terminated = False
         truncated = False
-
-        info["win"] = 0
 
         if self.game.is_won():
             reward = 10.0  # Win bonus
