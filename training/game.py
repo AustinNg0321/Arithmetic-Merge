@@ -129,7 +129,8 @@ class Game:
         elif character == SPACE:
             return " "
         else: 
-            return int(character)
+            return str(character)
+
     def set_game(self, grid) -> None:
         self._grid = grid
 
@@ -191,7 +192,7 @@ class Game:
 
         return new_grid
 
-    def get_valid_moves(self) -> list[int]:
+    def get_valid_moves(self) -> list[str]:
         valid_moves = []
         if self.up() != self._grid:
             valid_moves.append("up")

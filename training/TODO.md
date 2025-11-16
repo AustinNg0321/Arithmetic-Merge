@@ -3,3 +3,4 @@ Make game.py more efficient:
 - make grid all numbers instead of constantly converting between string and int
 - redo collapse_operators
 - redo collapse_list_right
+- what if there is one space left?

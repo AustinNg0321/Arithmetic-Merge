@@ -2,12 +2,11 @@ import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
 
-from game import Game
+from game import ADDITION, MULTIPLICATION, SPACE, SUBTRACTION, Game
 
-import sys # temp debug
-
-LOWER_BOUND = -1000
-UPPER_BOUND = 1000
+# scaled down by 100
+LOWER_BOUND = -10
+UPPER_BOUND = 10
 
 class SixSevenEnv(gym.Env):
     """
@@ -41,35 +40,32 @@ class SixSevenEnv(gym.Env):
         # We'll encode: empty="", digits 0-9, operators +/-/* as unique integer values
         # Empty: 0, Digits 0-9: 1-10, Operators +: 11, -: 12, *: 13
         self.observation_space = spaces.Box(
-            low=LOWER_BOUND, high=UPPER_BOUND, shape=(num_rows * num_cols * 2,), dtype=np.int32
+            low=LOWER_BOUND, high=UPPER_BOUND, shape=(num_rows * num_cols * 5,), dtype=np.float32
         )
 
         self.action_map = {0: "up", 1: "down", 2: "left", 3: "right"}
         self.steps = 0
-        self.max_steps = 500  # Maximum steps per episode
+        self.max_steps = 1000  # Maximum steps per episode
 
-    def _encode_cell(self, cell_value):
-        """Stores 2 values: digit/[operator or empty]
-           What if cell_value = 0"""
-        try: 
-            return [cell_value, 0, 0, 0, 0] # don't understand how still exceeds 500
-        except ValueError:
-            cell_value = str(cell_value)
-            if cell_value == "": # change this
-                return [0, 1, 0, 0, 0]
-            elif cell_value == "+":
-                return [0, 0, 1, 0, 0]
-            elif cell_value == "-":
-                return [0, 0, 0, 1, 0]
-            elif cell_value == "*":
-                return [0, 0, 0, 0, 1]
+    def _encode_cell(self, cell_value: int) -> list[float]:
+        """Stores 5 values: cell value if number, else one-hot for +,-,* or space"""
+        if cell_value == SPACE:
+            return [0, 1, 0, 0, 0]
+        elif cell_value == ADDITION:
+            return [0, 0, 1, 0, 0]
+        elif cell_value == SUBTRACTION:
+            return [0, 0, 0, 1, 0]
+        elif cell_value == MULTIPLICATION:
+            return [0, 0, 0, 0, 1]
+        else:  # digit 0-9
+            return [cell_value / 100, 0, 0, 0, 0]
 
-    def _get_observation(self, grid: list[list[str]] = None):
+    def _get_observation(self, grid: list[list[str]] = None) -> np.ndarray:
         """Convert game grid to observation array."""
         if grid is None:    # allows for conversion of arbitrary grid
             grid = self.game._grid
 
-        obs = np.zeros(self.num_rows * self.num_cols * 5, dtype=np.int32)
+        obs = np.zeros(self.num_rows * self.num_cols * 5, dtype=np.float32)
         flat_idx = 0
         for i in range(self.num_rows):
             for j in range(self.num_cols):
@@ -124,10 +120,11 @@ class SixSevenEnv(gym.Env):
 
         reward = 0.0
 
+
         if move_name not in valid_moves:
-            reward = -0.1 # invalid move penalty
+            reward = -1.0 # invalid move penalty
         else:
-            reward = -0.01
+            reward = -0.01 # small step penalty to encourage faster wins
 
             # Execute the move
             if move_name == "up":
@@ -151,13 +148,17 @@ class SixSevenEnv(gym.Env):
         truncated = False
 
         if self.game.is_won():
-            reward += 10.0  # Win bonus
+            reward = 10.0  # Win bonus
             terminated = True
         elif self.game.is_lost():
-            reward += -1.0  # Loss penalty
+            # Early end, heavy penalty for shorter games
+            # max 1000 steps
+            reward += -20.0 + self.steps * 0.01
+
             terminated = True
 
         if self.steps >= self.max_steps:
+            reward += -10.0  # Penalty for exceeding max steps
             truncated = True
 
         return observation, reward, terminated, truncated, info
