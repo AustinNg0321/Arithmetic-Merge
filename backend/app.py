@@ -2,6 +2,8 @@ from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from datetime import timedelta
 from dotenv import load_dotenv
+# from flask_seasurf import SeaSurf
+from flask_talisman import Talisman
 import os
 
 app = Flask(__name__)
@@ -11,6 +13,34 @@ app = Flask(__name__)
 # Generate a secret key with the command $ python -c 'import secrets; print(secrets.token_hex())'
 load_dotenv()
 app.secret_key = os.getenv("SECRET_KEY")
+
+# Protects from CSRF attacks
+# Include the CSRF token to metadata and attach it every post request when close to production
+# csrf = SeaSurf(app)
+
+# Talisman default CSP: {'default-src': '\'self\'', 'object-src': '\'none\'',}
+# The default CSP is fine for now, as long as 
+# -> HTML templates do not contain inline <script> or event handlers (onclick=, onload=, etc.).
+# -> All JS, CSS, and images come from /static
+# -> Not loading external CDNs or fonts.
+# -> Frontend only needs to call the backend API (connect-src 'self').
+
+csp = {
+    "default-src": "'self'",
+    "script-src": ["'self'"],
+    "style-src": ["'self'", "'unsafe-inline'"],
+    "img-src": "'self'",
+    "connect-src": "'self'",
+}
+# delete force_https=False and set up certificate when close to production
+Talisman(app, content_security_policy=csp, force_https=False)
+
+# Validate any potential form input: Never trust client-side content in JSON without checking type and allowed values
+# handle resource use and add rate limits
+# Set trusted hosts
+
+# optimize automatic cleanup (later)
+
 
 # This limit may get capped in some browsers
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=365*2)
