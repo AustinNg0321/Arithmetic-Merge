@@ -193,13 +193,13 @@ class Game:
 
     def get_valid_moves(self) -> list[int]:
         valid_moves = []
-        if self.grid.up() != self._grid:
+        if self.up() != self._grid:
             valid_moves.append("up")
-        if self.grid.down() != self._grid:
+        if self.down() != self._grid:
             valid_moves.append("down")
-        if self.grid.left() != self._grid:
+        if self.left() != self._grid:
             valid_moves.append("left")
-        if self.grid.right() != self._grid:
+        if self.right() != self._grid:
             valid_moves.append("right")
         return valid_moves
 

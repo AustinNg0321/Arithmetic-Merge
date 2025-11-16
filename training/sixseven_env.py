@@ -6,8 +6,8 @@ from game import Game
 
 import sys # temp debug
 
-LOWER_BOUND = -500
-UPPER_BOUND = 500
+LOWER_BOUND = -1000
+UPPER_BOUND = 1000
 
 class SixSevenEnv(gym.Env):
     """
@@ -52,29 +52,29 @@ class SixSevenEnv(gym.Env):
         """Stores 2 values: digit/[operator or empty]
            What if cell_value = 0"""
         try: 
-            return [int(cell_value) % 500, 0] # don't understand how still exceeds 500
+            return [cell_value, 0, 0, 0, 0] # don't understand how still exceeds 500
         except ValueError:
             cell_value = str(cell_value)
             if cell_value == "": # change this
-                return [0, 1]
+                return [0, 1, 0, 0, 0]
             elif cell_value == "+":
-                return [0, 2]
+                return [0, 0, 1, 0, 0]
             elif cell_value == "-":
-                return [0, 3]
+                return [0, 0, 0, 1, 0]
             elif cell_value == "*":
-                return [0, 4]
+                return [0, 0, 0, 0, 1]
 
     def _get_observation(self, grid: list[list[str]] = None):
         """Convert game grid to observation array."""
         if grid is None:    # allows for conversion of arbitrary grid
             grid = self.game._grid
 
-        obs = np.zeros(self.num_rows * self.num_cols * 2, dtype=np.int32)
+        obs = np.zeros(self.num_rows * self.num_cols * 5, dtype=np.int32)
         flat_idx = 0
         for i in range(self.num_rows):
             for j in range(self.num_cols):
-                obs[flat_idx:flat_idx + 2] = self._encode_cell(grid[i][j])
-                flat_idx += 2
+                obs[flat_idx:flat_idx + 5] = self._encode_cell(grid[i][j])
+                flat_idx += 5
 
         return obs
 
@@ -127,7 +127,7 @@ class SixSevenEnv(gym.Env):
         if move_name not in valid_moves:
             reward = -0.1 # invalid move penalty
         else:
-            reward = 0.01
+            reward = -0.01
 
             # Execute the move
             if move_name == "up":
