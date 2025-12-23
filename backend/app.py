@@ -8,8 +8,16 @@ from flask_cors import CORS
 import os
 
 app = Flask(__name__)
+
 # allows frontend to call API
-CORS(app, supports_credentials=True)
+CORS(
+    app,
+    supports_credentials=True,
+    origins=["http://localhost:3000"]
+)
+
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax";
+app.config["SESSION_COOKIE_SECURE"] = False;  # True in production (HTTPS)
 
 # Use client-side Flask sessions for non-sensitive data
 # A session should store data for id, current game, and statistics (wins/losses/abandoned games, and maybe time/moves taken)
@@ -28,15 +36,15 @@ app.secret_key = os.getenv("SECRET_KEY")
 # -> Not loading external CDNs or fonts.
 # -> Frontend only needs to call the backend API (connect-src 'self').
 
-csp = {
-    "default-src": "'self'",
-    "script-src": ["'self'"],
-    "style-src": ["'self'", "'unsafe-inline'"],
-    "img-src": "'self'",
-    "connect-src": "'self'",
-}
+# csp = {
+#     "default-src": "'self'",
+#     "script-src": ["'self'"],
+#     "style-src": ["'self'", "'unsafe-inline'"],
+#     "img-src": "'self'",
+#     "connect-src": "'self'",
+# }
 # delete force_https=False and set up certificate when close to production
-Talisman(app, content_security_policy=csp, force_https=False)
+# Talisman(app, content_security_policy=csp, force_https=False)
 
 # Validate any potential form input: Never trust client-side content in JSON without checking type and allowed values
 # handle resource use and add rate limits
