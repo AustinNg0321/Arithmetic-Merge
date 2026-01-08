@@ -1,6 +1,6 @@
 # Project Program for 2025 CSC
 
-## 67! (Inspired by 2048)
+## Arithmetic Merge (Inspired by 2048)
 Start with an m by n grid and 2 randomly generated tiles. The goal of the game is to get the **67** tile.
 
 Each generated tile is either an arithmetic operation (+ - *) (50% chance) or a digit (50% chance). The divide (/) operation is not included.
