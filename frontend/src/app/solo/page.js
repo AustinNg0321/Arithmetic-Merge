@@ -22,10 +22,15 @@ function Game({ curGame }) {
     const curGrid = curGame.grid;
 
     return (
-        <div className="container">
+        <div className="container mb-5 text-center">
             {curGrid.map((row, r) => (
-                <div key={r} className="row">
-                    {row.map((cell, c) => (<div key={c} className="cell">{ parse(cell) }</div>))}
+                <div key={r} className="row flex">
+                    {row.map((cell, c) => (
+                        <div key={c} className="cell flex items-center justify-center font-bold m-1
+                      bg-blue-100 border border-gray-300 aspect-square size-1/12 lg:size-16 
+                        text-md lg:text-2xl rounded-sm lg:rounded-lg">
+                            { parse(cell) }
+                        </div>))}
                 </div>
             ))}
         </div>  
@@ -103,7 +108,10 @@ export default function Solo() {
     return (
         <>
             <Game curGame={game}/>
-            <button className="restart" onClick={restart}>Restart</button>
+            <button className="restart pl-5 pr-5 pt-2.5 pb-2.5 text-lg rounded-md border 
+            bg-emerald-500 text-white cursor-pointer hover:bg-emerald-700" onClick={restart}>
+                Restart
+            </button>
         </>
     );
 }

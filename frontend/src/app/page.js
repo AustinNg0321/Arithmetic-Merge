@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import GameModes from "./links";
+import "./globals.css";
 
 function Statistics({ data }) {
     return (
-        <div>
+        <div className="mb-5">
             <ul>
                 <li>UserID: {data.user_id}</li>
                 <li>Wins: {data.wins}</li>
