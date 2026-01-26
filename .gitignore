@@ -14,3 +14,5 @@ venv/
 # Env files
 .env
 
+# The instance folder containing the database
+instance/

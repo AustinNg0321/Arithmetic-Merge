@@ -1,12 +1,4 @@
-import random
-import sys
-import os
-
-training_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'training'))
-if training_path not in sys.path:
-    sys.path.append(training_path)
-
-from game import Game
+from backend.utils.game import Game
 
 class GameManager():
 
