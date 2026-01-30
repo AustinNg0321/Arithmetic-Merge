@@ -1,16 +1,16 @@
 import random
 
 # Constants for operations - NEED TO CHANGE IF CHANGING THE MAXIMUM/MINIMUM VALUES
-ADDITION = 1001
-SUBTRACTION = 1002
-MULTIPLICATION = 1003
-SPACE = 1004
+ADDITION = "+"
+SUBTRACTION = "-"
+MULTIPLICATION = "*"
+SPACE = " "
 OPERATORS = [ADDITION, SUBTRACTION, MULTIPLICATION]
 
 def construct_grid(num_rows: int, num_cols: int, item: int) -> list[list[int]]:
     return [[item for j in range(num_cols)] for i in range(num_rows)]
 
-def evaluate(num_1: int, operator: int, num_2: int) -> int:
+def evaluate(num_1: int, operator: str, num_2: int) -> int:
     if operator == ADDITION:
         return num_1 + num_2
     elif operator == SUBTRACTION:
@@ -18,7 +18,7 @@ def evaluate(num_1: int, operator: int, num_2: int) -> int:
     elif operator == MULTIPLICATION:
         return num_1 * num_2
     else:
-        return 0
+        raise ValueError("Invalid operator: operator must be +, -, or *")
 
 def remove_extra_spaces(lst: list[int]) -> list[int]:
     return [lst[i] for i in range(len(lst)) if lst[i] != SPACE]
@@ -88,17 +88,9 @@ def out_of_bounds(grid: list[list[int]], upper_bound: int = 1000, lower_bound: i
                     return True
     return False
 
+# Class implementing the core logic Arithmetic Merge game
 class Game:
-    """Class representing the SixSeven game."""
-
-    def __add_blank_spaces(self) -> list[tuple[int, int]]:
-        return [(i, j) for i in range(self._num_rows) for j in range(self._num_cols)]
-
-    def __update_blank_spaces(self) -> None:
-        self._blank_spaces = [(i, j) for i in range(self._num_rows) for j in range(self._num_cols)
-                              if self._grid[i][j] == SPACE]
-
-    def __init__(self, num_rows: int, num_cols: int):
+    def __init__(self, num_rows: int, num_cols: int) -> None:
         self._grid = construct_grid(num_rows, num_cols, SPACE)
         self._num_rows = num_rows
         self._num_cols = num_cols
@@ -108,8 +100,11 @@ class Game:
         self._generated_digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         self._num_generated_tiles = 2 # set this to somewhere between 2 to 4
         self._round_num = 1
+    
+    def get_num_generated_tiles_per_turn(self) -> int:
+        return self._num_generated_tiles
 
-    def __str__(self):
+    def __str__(self) -> str:
         board = ""
         for i in range (self._num_rows):
             cur_row = ""
@@ -120,16 +115,20 @@ class Game:
         return board
 
     def character_str(self, character: int) -> str:
-        if character == ADDITION:
-            return "+"
-        elif character == SUBTRACTION:
-            return "-"
-        elif character == MULTIPLICATION:
-            return "*"
-        elif character == SPACE:
-            return " "
-        else: 
-            return str(character)
+        return str(character)
+
+    def get_blank_spaces(self) -> list[tuple[int, int]]:
+        return self._blank_spaces
+
+    def __add_blank_spaces(self) -> list[tuple[int, int]]:
+        return [(i, j) for i in range(self._num_rows) for j in range(self._num_cols)]
+
+    def update_blank_spaces(self) -> None:
+        self._blank_spaces = [(i, j) for i in range(self._num_rows) for j in range(self._num_cols)
+                              if self._grid[i][j] == SPACE]
+
+    def get_game(self) -> list[list[int]]:
+        return self._grid
 
     def set_game(self, grid) -> None:
         self._grid = grid
@@ -212,25 +211,25 @@ class Game:
         new_grid = self.up()
         if new_grid != self._grid:
             self._grid = new_grid
-            self.__update_blank_spaces()
+            self.update_blank_spaces()
 
     def slide_down(self) -> None:
         new_grid = self.down()
         if new_grid != self._grid:
             self._grid = new_grid
-            self.__update_blank_spaces()
+            self.update_blank_spaces()
 
     def slide_left(self) -> None:
         new_grid = self.left()
         if new_grid != self._grid:
             self._grid = new_grid
-            self.__update_blank_spaces()
+            self.update_blank_spaces()
 
     def slide_right(self) -> None:
         new_grid = self.right()
         if new_grid != self._grid:
             self._grid = new_grid
-            self.__update_blank_spaces()
+            self.update_blank_spaces()
 
     def is_won(self) -> bool:
         return any(self._grid[i][j] == 67 for i in range(self._num_rows) for j in range(self._num_cols))
@@ -240,6 +239,9 @@ class Game:
         if valid_moves is None:
             valid_moves = self.get_valid_moves()
         return not self.is_won() and (len(valid_moves) == 0 or out_of_bounds(self._grid))
+
+
+# The below functions are not used currently
 
 def human_play(num_rows: int, num_cols: int) -> bool:
     game = Game(num_rows, num_cols)
@@ -252,7 +254,7 @@ def human_play(num_rows: int, num_cols: int) -> bool:
     while True:
         valid_moves = game.get_valid_moves()
 
-        if len(valid_moves) == 0:
+        if game.is_lost():
             print(f"Game over after {round_num} rounds.")
             return False
 
@@ -291,7 +293,7 @@ def auto_play(num_rows: int, num_cols: int, max_turns_per_game : int = 1000, mod
         game.generate_tiles()
         valid_moves = game.get_valid_moves()
 
-        if len(valid_moves) == 0:
+        if game.is_lost():
             return [0, round_num] # *** overlap with loss condition ***
 
         move = model(game._grid, valid_moves)

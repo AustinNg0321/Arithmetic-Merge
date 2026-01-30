@@ -1,8 +1,7 @@
 from backend.utils.game import Game
 
 class GameManager():
-
-    def __init__(self, num_rows: int, num_cols: int):
+    def __init__(self, num_rows: int, num_cols: int) -> None:
         self._game = Game(num_rows, num_cols)
         self._game.generate_tiles()
         self._state = "In Progress"
@@ -16,10 +15,10 @@ class GameManager():
         self._round_num = 1
         self._valid_moves = self._game.get_valid_moves()
 
-    def get_game(self):
+    def get_game(self) -> Game:
         return self._game
 
-    def get_state(self):
+    def get_state(self) -> str:
         return self._state
     
     def set_round(self, round_num: int) -> None:
@@ -31,7 +30,7 @@ class GameManager():
     def update_valid_moves(self) -> None:
         self._valid_moves = self._game.get_valid_moves()
 
-    def to_dict(self):
+    def to_dict(self) -> dict:
         return {
             "grid": self._game._grid,
             "rows": self._game._num_rows,
@@ -45,8 +44,7 @@ class GameManager():
         }
 
     def move(self, direction: str) -> None:
-        # Make move
-        if direction in self._valid_moves:
+        if self._state == "In Progress" and direction in self._valid_moves:
             match (direction):
                 case "up":
                     self._game.slide_up()
@@ -64,5 +62,5 @@ class GameManager():
                 self._round_num += 1
                 self._game.generate_tiles()
                 self._valid_moves = self._game.get_valid_moves()
-                if self._valid_moves == []:
+                if self._game.is_lost():
                     self._state = "Lost"

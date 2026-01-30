@@ -71,7 +71,7 @@ class Game:
                 all_blanks.append((i, j))
         return all_blanks
 
-    def __update_blank_spaces(self) -> None:
+    def update_blank_spaces(self) -> None:
         all_blanks = []
         for i in range(self._num_rows):
             for j in range(self._num_cols):
@@ -173,25 +173,25 @@ class Game:
         new_grid = self.up()
         if new_grid != self._grid:
             self._grid = new_grid
-            self.__update_blank_spaces()
+            self.update_blank_spaces()
 
     def slide_down(self) -> None:
         new_grid = self.down()
         if new_grid != self._grid:
             self._grid = new_grid
-            self.__update_blank_spaces()
+            self.update_blank_spaces()
 
     def slide_left(self) -> None:
         new_grid = self.left()
         if new_grid != self._grid:
             self._grid = new_grid
-            self.__update_blank_spaces()
+            self.update_blank_spaces()
 
     def slide_right(self) -> None:
         new_grid = self.right()
         if new_grid != self._grid:
             self._grid = new_grid
-            self.__update_blank_spaces()
+            self.update_blank_spaces()
 
     def is_won(self) -> bool:
         for i in range (self._num_rows):

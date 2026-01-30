@@ -7,6 +7,7 @@
 - Initiailize a database (if it does not exist yet)
   - Go to the project root directory and type python or python3 to initialize a python shell
   - In the python shell, type:
+- To test the backend, optionally go to the backend folder and type $pytest
 
 ```python
 from backend.app import app, db
