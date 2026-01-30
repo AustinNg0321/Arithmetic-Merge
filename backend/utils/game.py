@@ -5,7 +5,7 @@ ADDITION = "+"
 SUBTRACTION = "-"
 MULTIPLICATION = "*"
 SPACE = " "
-OPERATORS = [ADDITION, SUBTRACTION, MULTIPLICATION]
+OPERATORS = [ADDITION, SUBTRACTION]
 
 def construct_grid(num_rows: int, num_cols: int, item: int) -> list[list[int]]:
     return [[item for j in range(num_cols)] for i in range(num_rows)]
@@ -99,10 +99,27 @@ class Game:
         self._prob_operations = 0.67
         self._generated_digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
         self._num_generated_tiles = 2 # set this to somewhere between 2 to 4
-        self._round_num = 1
     
+    def get_num_rows(self):
+        return self._num_rows
+
+    def get_num_cols(self):
+        return self._num_cols
+
+    def get_generated_operations(self):
+        return self._generated_operations
+
+    def get_prob_operations(self):
+        return self._prob_operations
+
+    def get_generated_digits(self):
+        return self._generated_digits
+
     def get_num_generated_tiles_per_turn(self) -> int:
         return self._num_generated_tiles
+
+    def get_round_num(self):
+        return self._round_num
 
     def __str__(self) -> str:
         board = ""

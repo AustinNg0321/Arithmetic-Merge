@@ -4,7 +4,7 @@ from ...utils.game import (
     SPACE,
     ADDITION,
     SUBTRACTION,
-    MULTIPLICATION
+    # MULTIPLICATION,
 )
 
 NO_OPERATIONS_GRID = [
@@ -32,12 +32,12 @@ ALREADY_LOST_GRID = [
 ]
 
 FULL_BUT_NOT_LOST_GRID = [
-    [1, ADDITION, 3, SUBTRACTION, 5, MULTIPLICATION, 7],
+    [1, ADDITION, 3, SUBTRACTION, 5, ADDITION, 7],
     [8, SUBTRACTION, 10, ADDITION, 12, SUBTRACTION, 14],
-    [15, MULTIPLICATION, 17, SUBTRACTION, 19, ADDITION, 21],
-    [22, SUBTRACTION, 24, MULTIPLICATION, 26, MULTIPLICATION, 28],
-    [29, ADDITION, 31, SUBTRACTION, 33, SUBTRACTION, 35],
-    [36, SUBTRACTION, 38, ADDITION, 40, ADDITION, 42],
+    [15, ADDITION, 17, SUBTRACTION, 19, ADDITION, 21],
+    [22, SUBTRACTION, 24, ADDITION, 26, SUBTRACTION, 28],
+    [29, ADDITION, 31, SUBTRACTION, 33, ADDITION, 35],
+    [36, SUBTRACTION, 38, ADDITION, 40, SUBTRACTION, 42],
 ]
 
 GOT_67_BUT_NO_MOVES_GRID = [
@@ -246,12 +246,12 @@ class TestMovementFullButNotLost:
 
     def test_slide_left_full(self):
         expected_new_grid = [
-            [4, SUBTRACTION, 35, SPACE, SPACE, SPACE, SPACE],
+            [4, SUBTRACTION, 12, SPACE, SPACE, SPACE, SPACE],
             [-2, ADDITION, -2, SPACE, SPACE, SPACE, SPACE],
-            [255, SUBTRACTION, 40, SPACE, SPACE, SPACE, SPACE],
-            [-2, MULTIPLICATION, 728, SPACE, SPACE, SPACE, SPACE],
-            [60, SUBTRACTION, -2, SPACE, SPACE, SPACE, SPACE],
-            [-2, ADDITION, 82, SPACE, SPACE, SPACE, SPACE],
+            [32, SUBTRACTION, 40, SPACE, SPACE, SPACE, SPACE],
+            [-2, ADDITION, -2, SPACE, SPACE, SPACE, SPACE],
+            [60, SUBTRACTION, 68, SPACE, SPACE, SPACE, SPACE],
+            [-2, ADDITION, -2, SPACE, SPACE, SPACE, SPACE],
         ]
         g = make_game(FULL_BUT_NOT_LOST_GRID)
         assert g.get_game() == FULL_BUT_NOT_LOST_GRID
@@ -262,12 +262,12 @@ class TestMovementFullButNotLost:
 
     def test_slide_right_full(self):
         expected_new_grid = [
-            [SPACE, SPACE, SPACE, SPACE, 4, SUBTRACTION, 35],
+            [SPACE, SPACE, SPACE, SPACE, 4, SUBTRACTION, 12],
             [SPACE, SPACE, SPACE, SPACE, -2, ADDITION, -2],
-            [SPACE, SPACE, SPACE, SPACE, 255, SUBTRACTION, 40],
-            [SPACE, SPACE, SPACE, SPACE, -2, MULTIPLICATION, 728],
-            [SPACE, SPACE, SPACE, SPACE, 60, SUBTRACTION, -2],
-            [SPACE, SPACE, SPACE, SPACE, -2, ADDITION, 82],
+            [SPACE, SPACE, SPACE, SPACE, 32, SUBTRACTION, 40],
+            [SPACE, SPACE, SPACE, SPACE, -2, ADDITION, -2],
+            [SPACE, SPACE, SPACE, SPACE, 60, SUBTRACTION, 68],
+            [SPACE, SPACE, SPACE, SPACE, -2, ADDITION, -2],
         ]
         g = make_game(FULL_BUT_NOT_LOST_GRID)
         assert g.get_game() == FULL_BUT_NOT_LOST_GRID

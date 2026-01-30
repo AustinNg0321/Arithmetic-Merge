@@ -1,9 +1,16 @@
-from flask import session, render_template, request, abort, jsonify
+from flask import session, request, abort, jsonify
 from random import random
 from backend.app import db, app
 from backend.models.user import User
-from backend.utils.util import generate_user_id, cleanup_expired_sessions, dict_to_game
+from backend.utils.util import generate_user_id, dict_to_game
 from backend.utils.game_manager import GameManager
+from datetime import datetime, timedelta
+
+# Should be run periodically
+def cleanup_expired_sessions() -> None:
+    now = datetime.now()
+    User.query.filter(User.created_at + timedelta(days=365*2) < now).delete()
+    db.session.commit()
 
 # session is permanent unless it expires, the user deletes cookie manually, or the server restarts 
 @app.before_request
@@ -37,7 +44,7 @@ def get_solo():
 
 @app.route("/api/restart", methods=["POST"])
 def restart():
-    game = dict_to_game(session["current_solo_game"])
+    game = dict_to_game(session["current_solo_game"], 6, 7)
     if game.get_state() == "In Progress":
         user_id = session["user_id"]
         user = User.query.get_or_404(user_id)
@@ -57,7 +64,7 @@ def make_move():
     if not direction or direction not in ["up", "down", "left", "right"]:
         abort(400, description="Invalid move direction")
 
-    game = dict_to_game(session["current_solo_game"])
+    game = dict_to_game(session["current_solo_game"], 6, 7)
     if game.get_state() != "In Progress":
         abort(400, description="Game has already ended")
 

@@ -9,11 +9,11 @@ from ...utils.game import (
     out_of_bounds,
     ADDITION,
     SUBTRACTION,
-    MULTIPLICATION,
     SPACE,
+    # MULTIPLICATION,
 )
 
-OPERATIONS = [ADDITION, SUBTRACTION, MULTIPLICATION]
+OPERATIONS = [ADDITION, SUBTRACTION]
 
 class TestConstructGrid:
     def test_construct_grid_classic(self):
@@ -96,6 +96,7 @@ class TestSubtraction:
     def test_evaluate_subtraction_zero_4(self):
         assert evaluate(6, SUBTRACTION, -2) == 8
 
+"""
 class TestMultiplication:
     def test_evaluate_multiplication_normal(self):
         assert evaluate(3, MULTIPLICATION, 5) == 15
@@ -108,7 +109,8 @@ class TestMultiplication:
     
     def test_evaluate_mutiplication_negative_big(self):
         assert evaluate(-36, MULTIPLICATION, -23) == 828
-    
+"""
+         
 class TestInvalidOperator:
     def test_evaluate_invalid_operator_raises_error(self):
         with pytest.raises(ValueError):
@@ -125,12 +127,12 @@ class TestRemoveExtraSpaces:
         assert remove_extra_spaces(lst) == [1, 2, 3]
     
     def test_remove_spaces_normal_2(self):
-        lst = [SPACE, 1, "+", "*", 2, SPACE, SPACE, SPACE]
-        assert remove_extra_spaces(lst) == [1, "+", "*", 2]
+        lst = [SPACE, 1, "+", "-", 2, SPACE, SPACE, SPACE]
+        assert remove_extra_spaces(lst) == [1, "+", "-", 2]
     
     def test_remove_spaces_no_space(self):
-        lst = ["*", "-", "+"]
-        assert remove_extra_spaces(lst) == ["*", "-", "+"]
+        lst = ["+", "-", "+"]
+        assert remove_extra_spaces(lst) == ["+", "-", "+"]
     
     def test_remove_spaces_empty(self):
         lst = []
@@ -146,8 +148,8 @@ class TestCollapseOperators:
         assert collapse_operators(lst, OPERATIONS) == [1, ADDITION, 2]
     
     def test_collapse_operators_normal_2(self):
-        lst = [1, MULTIPLICATION, MULTIPLICATION, ADDITION, ADDITION, ADDITION, SUBTRACTION, 3, ADDITION, 2, 2, SUBTRACTION, SUBTRACTION]
-        assert collapse_operators(lst, OPERATIONS) == [1, MULTIPLICATION, ADDITION, SUBTRACTION, 3, ADDITION, 2, 2, SUBTRACTION]
+        lst = [1, ADDITION, ADDITION, ADDITION, SUBTRACTION, 3, ADDITION, 2, 2, SUBTRACTION, SUBTRACTION]
+        assert collapse_operators(lst, OPERATIONS) == [1, ADDITION, SUBTRACTION, 3, ADDITION, 2, 2, SUBTRACTION]
     
     def test_collapse_operators_empty(self):
         lst = []
@@ -158,8 +160,8 @@ class TestCollapseOperators:
         assert collapse_operators(lst, OPERATIONS) == [1, -2, 3, -4, 5]
 
     def test_collapse_operators_all_operators(self):
-        lst = [ADDITION, ADDITION, MULTIPLICATION, SUBTRACTION, SUBTRACTION, MULTIPLICATION]
-        assert collapse_operators(lst, OPERATIONS) == [ADDITION, MULTIPLICATION, SUBTRACTION, MULTIPLICATION]
+        lst = [ADDITION, ADDITION, ADDITION, SUBTRACTION, SUBTRACTION, ADDITION]
+        assert collapse_operators(lst, OPERATIONS) == [ADDITION, SUBTRACTION, ADDITION]
 
 class TestCollapseListLeft:
     def test_collapse_list_left_normal_1(self):
@@ -179,24 +181,24 @@ class TestCollapseListLeft:
         assert collapse_list_left(lst) == [3, ADDITION, 3]
     
     def test_collapse_list_left_normal_5(self):
-        lst = [1, ADDITION, MULTIPLICATION, MULTIPLICATION, SUBTRACTION, 2, ADDITION, 5]
-        assert collapse_list_left(lst) == [1, ADDITION, MULTIPLICATION, SUBTRACTION, 7]
+        lst = [1, ADDITION, ADDITION, SUBTRACTION, SUBTRACTION, 2, ADDITION, 5]
+        assert collapse_list_left(lst) == [1, ADDITION, SUBTRACTION, 7]
     
     def test_collapse_list_left_normal_6(self):
-        lst = [1, ADDITION, ADDITION, 2, MULTIPLICATION, 3]
-        assert collapse_list_left(lst) == [3, MULTIPLICATION, 3]
+        lst = [1, ADDITION, ADDITION, 2, ADDITION, 3]
+        assert collapse_list_left(lst) == [3, ADDITION, 3]
     
     def test_collapse_list_left_empty(self):
         lst = []
         assert collapse_list_left(lst) == []
     
     def test_collapse_list_left_no_reduce_1(self):
-        lst = [1, ADDITION, MULTIPLICATION, SUBTRACTION, 2, 3]
-        assert collapse_list_left(lst) == [1, ADDITION, MULTIPLICATION, SUBTRACTION, 2, 3]
+        lst = [1, ADDITION, SUBTRACTION, SUBTRACTION, 2, 3]
+        assert collapse_list_left(lst) == [1, ADDITION, SUBTRACTION, 2, 3]
     
     def test_collapse_list_left_no_reduce_2(self):
-        lst = [1, 2, ADDITION, SUBTRACTION, 5, MULTIPLICATION]
-        assert collapse_list_left(lst) == [1, 2, ADDITION, SUBTRACTION, 5, MULTIPLICATION]
+        lst = [1, 2, ADDITION, SUBTRACTION, 5, SUBTRACTION]
+        assert collapse_list_left(lst) == [1, 2, ADDITION, SUBTRACTION, 5, SUBTRACTION]
 
 class TestCollapseListRight:
     def test_collapse_list_right_normal_1(self):
@@ -216,24 +218,24 @@ class TestCollapseListRight:
         assert collapse_list_right(lst) == [1, ADDITION, 5]
     
     def test_collapse_list_right_normal_5(self):
-        lst = [1, ADDITION, MULTIPLICATION, MULTIPLICATION, SUBTRACTION, 2, ADDITION, 5]
-        assert collapse_list_right(lst) == [1, ADDITION, MULTIPLICATION, SUBTRACTION, 7]
+        lst = [1, ADDITION, SUBTRACTION, 2, ADDITION, 5]
+        assert collapse_list_right(lst) == [1, ADDITION, SUBTRACTION, 7]
     
     def test_collapse_list_right_normal_6(self):
-        lst = [1, ADDITION, ADDITION, 2, MULTIPLICATION, 3]
-        assert collapse_list_right(lst) == [1, ADDITION, 6]
+        lst = [1, ADDITION, ADDITION, 2, ADDITION, 3]
+        assert collapse_list_right(lst) == [1, ADDITION, 5]
     
     def test_collapse_list_right_empty(self):
         lst = []
         assert collapse_list_right(lst) == []
     
     def test_collapse_list_right_no_reduce_1(self):
-        lst = [1, ADDITION, MULTIPLICATION, SUBTRACTION, 2, 3]
-        assert collapse_list_right(lst) == [1, ADDITION, MULTIPLICATION, SUBTRACTION, 2, 3]
+        lst = [1, ADDITION, SUBTRACTION, 2, 3]
+        assert collapse_list_right(lst) == [1, ADDITION, SUBTRACTION, 2, 3]
     
     def test_collapse_list_right_no_reduce_2(self):
-        lst = [1, 2, ADDITION, SUBTRACTION, 5, MULTIPLICATION]
-        assert collapse_list_right(lst) == [1, 2, ADDITION, SUBTRACTION, 5, MULTIPLICATION]
+        lst = [1, 2, ADDITION, SUBTRACTION, 5, SUBTRACTION]
+        assert collapse_list_right(lst) == [1, 2, ADDITION, SUBTRACTION, 5, SUBTRACTION]
 
 
 class TestOutOfBounds:
@@ -242,7 +244,7 @@ class TestOutOfBounds:
         assert out_of_bounds(grid) is False
 
     def test_out_of_bounds_ignores_spaces_and_operators(self):
-        grid = [[SPACE, ADDITION], [SUBTRACTION, MULTIPLICATION]]
+        grid = [[SPACE, ADDITION], [SUBTRACTION, SPACE]]
         assert out_of_bounds(grid) is False
 
     def test_out_of_bounds_true_above_upper(self):

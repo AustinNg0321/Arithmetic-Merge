@@ -1,23 +1,14 @@
 import uuid
-from datetime import datetime, timedelta
-from backend.models.user import User
-from backend.app import db
 from backend.utils.game_manager import GameManager
 
 def generate_user_id() -> str:
     return str(uuid.uuid4())
 
-# Should be run periodically
-def cleanup_expired_sessions():
-    now = datetime.utcnow()
-    User.query.filter(User.created_at + timedelta(days=365*2) < now).delete()
-    db.session.commit()
-
-def dict_to_game(game_dict):
+def dict_to_game(game_dict: dict, num_rows: int, num_cols: int) -> GameManager:
     grid = game_dict["grid"]
     round_num = game_dict["round"]
     state = game_dict["state"]
-    cur_game = GameManager(6, 7)
+    cur_game = GameManager(num_rows, num_cols)
     cur_game.get_game().set_game(grid)
     cur_game.set_round(round_num)
     cur_game.set_state(state)
