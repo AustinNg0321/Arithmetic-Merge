@@ -90,15 +90,15 @@ def out_of_bounds(grid: list[list[int]], upper_bound: int = 1000, lower_bound: i
 
 # Class implementing the core logic Arithmetic Merge game
 class Game:
-    def __init__(self, num_rows: int, num_cols: int) -> None:
-        self._grid = construct_grid(num_rows, num_cols, SPACE)
-        self._num_rows = num_rows
-        self._num_cols = num_cols
+    def __init__(self, grid: list[list[int]], num_rows: int, num_cols: int, generated_operations: list[str], prob_operations: float, generated_digits: list[int], num_generated_tiles: int) -> None:
+        self._grid = grid
+        self._num_rows = num_rows # 6
+        self._num_cols = num_cols # 7
         self._blank_spaces = self.__add_blank_spaces()
-        self._generated_operations = OPERATORS.copy()
-        self._prob_operations = 0.67
-        self._generated_digits = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-        self._num_generated_tiles = 2 # set this to somewhere between 2 to 4
+        self._generated_operations = generated_operations
+        self._prob_operations = prob_operations # 0.67
+        self._generated_digits = generated_digits # [0-9]
+        self._num_generated_tiles = num_generated_tiles # (2) - 4
     
     def get_num_rows(self):
         return self._num_rows
@@ -117,9 +117,6 @@ class Game:
 
     def get_num_generated_tiles_per_turn(self) -> int:
         return self._num_generated_tiles
-
-    def get_round_num(self):
-        return self._round_num
 
     def __str__(self) -> str:
         board = ""
@@ -257,6 +254,13 @@ class Game:
             valid_moves = self.get_valid_moves()
         return not self.is_won() and (len(valid_moves) == 0 or out_of_bounds(self._grid))
 
+    def get_state(self) -> str:
+        if self.is_won():
+            return "Won"
+        elif self.is_lost():
+            return "Lost"
+        else:
+            return "In Progress"
 
 # The below functions are not used currently
 

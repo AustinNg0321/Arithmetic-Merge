@@ -3,7 +3,7 @@ from flask_sqlalchemy import SQLAlchemy
 from datetime import timedelta
 from dotenv import load_dotenv
 # from flask_seasurf import SeaSurf
-from flask_talisman import Talisman
+# from flask_talisman import Talisman
 from flask_cors import CORS
 import os
 
