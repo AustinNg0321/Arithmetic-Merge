@@ -13,14 +13,11 @@ OPERATOR_SPAWN_RATE = 0.67
 INCLUDED_DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 GENERATED_TILES_PER_TURN = 2
 
-# changed user_id: if user_id not found in the database, create a new session 
-# changed current_solo_game: 
+# Defensive handling for corrupted game data in database
+# (maybe) rollback
 
-# If the cookie is modified/deleted/etc. -> crashes
-# i.e. session integrity and corruption handling
-# e.g. restart may fail if dict_to_game() fails
- 
-# return consistent error responses (maybe add global error handler)
+# return consistent structured JSON error responses
+# maybe add global error handlers
 # switch to taking JSON
 
 # Should be run periodically
@@ -32,28 +29,38 @@ def cleanup_expired_sessions() -> None:
 def construct_game(grid):
     return Game(grid, NUM_ROWS, NUM_COLS, INCLUDED_OPERATIONS, OPERATOR_SPAWN_RATE, INCLUDED_DIGITS, GENERATED_TILES_PER_TURN)
 
+def create_new_session():
+    session.clear()
+    session["user_id"] = generate_user_id()
+    session.permanent = True 
+
+    new_game = construct_game(construct_grid(NUM_ROWS, NUM_COLS, SPACE))
+    new_game.generate_tiles()
+    new_game_dict = {
+        "grid": new_game.get_game(),
+        "state": "In Progress",
+        "round_num": 1,
+    }
+
+    new_user = User(user_id=session["user_id"])
+    new_user.set_game_dict(new_game_dict)
+    db.session.add(new_user)
+    db.session.commit()
+
 
 # session is permanent unless it expires, the user deletes cookie manually, or the server restarts 
 @app.before_request
 def ensure_session():
-    if "user_id" not in session or not User.query.get(session["user_id"]):
-        session.clear()
-        session["user_id"] = generate_user_id()
-        session.permanent = True 
+    if request.endpoint in {"static"}:
+        return
 
-        new_game = construct_game(construct_grid(NUM_ROWS, NUM_COLS, SPACE))
-        new_game.generate_tiles()
-        new_game_dict = {
-            "grid": new_game.get_game(),
-            "state": "In Progress",
-            "round_num": 1,
-        }
+    user_id = session.get("user_id")
+    if user_id:
+        user = User.query.get(user_id)
+        if user:
+            return
 
-        new_user = User(user_id=session["user_id"])
-        new_user.set_game_dict(new_game_dict)
-        db.session.add(new_user)
-        db.session.commit()
-
+    create_new_session()
     if random() < 0.001:
         cleanup_expired_sessions()
 
