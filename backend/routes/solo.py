@@ -1,4 +1,6 @@
 from flask import session, request, abort, jsonify
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from sqlalchemy.exc import IntegrityError
 from random import random
 from backend.app import db, app
@@ -6,6 +8,19 @@ from backend.models.user import User
 from backend.utils.util import generate_user_id
 from backend.utils.game import Game, construct_grid, ADDITION, SUBTRACTION, SPACE
 from datetime import datetime, timedelta
+
+# Default rate limiting: rate limit by user_id
+def rate_limit_key():
+    if session and "user_id" in session:
+        return session["user_id"]
+    return get_remote_address()
+
+limiter = Limiter(
+    key_func=rate_limit_key,
+    app=app,
+    default_limits=["2 per second"],
+    storage_uri="memory://", # change to a redis url in prod
+)
 
 NUM_ROWS = 6
 NUM_COLS = 7
@@ -104,6 +119,8 @@ def ensure_session() -> None:
 
     create_new_session()
 
+
+
 @app.route("/api/", methods=["GET"])
 def index():
     user = User.query.get_or_404(session["user_id"])
@@ -125,6 +142,7 @@ def get_solo():
 
 
 @app.route("/api/restart", methods=["POST"])
+@limiter.limit("1 per 10 seconds")
 def restart():
     user = User.query.get_or_404(session["user_id"])
     cur_game_dict = user.get_game_dict()
@@ -140,6 +158,7 @@ def restart():
 
 # if round_num invalid, new round_num is not enforced currently !!!
 @app.route("/api/move", methods=["POST"])
+@limiter.limit("10 per second")
 def handle_move():
     # Expects "up", "down", "left", or "right" in the request body
     # Parsing and validating input

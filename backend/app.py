@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import timedelta
 from dotenv import load_dotenv
@@ -50,6 +50,7 @@ app.secret_key = os.getenv("SECRET_KEY")
 # Set trusted hosts
 
 # optimize automatic cleanup (later)
+
 
 
 # This limit may get capped in some browsers
