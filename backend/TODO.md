@@ -18,11 +18,9 @@ with app.app_context():
 ## Todo for backend
 
 - Add unit and integration tests
-- Improve error handling in backend
 - Add rate limiting
 - Setup systematic routine database cleanup
 - Change to Postgres for deployment (database only contains test data, so no need to migrate)
-- Cleanup (and potentially optimizing) game.py
 - Optional caching
 
 After cleaning up the backend and the frontend, prepare for deployment in Vercel.
