@@ -10,26 +10,30 @@ def cleanup_expired_sessions():
     db.session.commit()
     app.logger.info(f"Removed {expired_count} expired sessions")
 
+def normalize_game_dict(game_dict: dict) -> dict:
+    game = safe_construct_game(game_dict)
+    round_num = game_dict["round_num"]
+    if not isinstance(round_num, int) or round_num < 1:
+        round_num = 1
+
+    return {
+        "grid": game.get_game(),
+        "state": game.get_state(),
+        "round_num": round_num,
+    }
+
 def fix_corrupted_data():
     updated = 0
 
     for user in User.query.yield_per(100):
         try:
             game_dict = user.get_game_dict()
-            game = safe_construct_game(game_dict)
+            new_game_dict = normalize_game_dict(game_dict)
             round_num = game_dict["round_num"]
             if not isinstance(round_num, int) or round_num < 1:
                 round_num = 1
-
-            if (game_dict["grid"] != game.get_game() or
-                game_dict["state"] != game.get_state() or
-                game_dict["round_num"] != round_num):
-
-                new_game_dict = {
-                    "grid": game.get_game(),
-                    "state": game.get_state(),
-                    "round_num": round_num,
-                }
+            
+            if game_dict != new_game_dict:
                 user.set_game_dict(new_game_dict)
                 updated += 1
 

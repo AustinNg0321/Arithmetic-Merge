@@ -1,12 +1,12 @@
-from flask import Flask, jsonify, session
+from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from datetime import timedelta
 from dotenv import load_dotenv
 # from flask_seasurf import SeaSurf
 # from flask_talisman import Talisman
 from flask_cors import CORS
-from werkzeug.exceptions import HTTPException
-from sqlalchemy.exc import SQLAlchemyError
+from backend.error.error_handlers import register_error_handlers
+from backend.extensions.rate_limiter import add_rate_limiter
 import os
 # import logging only if configuring logging manually
 
@@ -51,8 +51,6 @@ app.secret_key = os.getenv("SECRET_KEY")
 
 # optimize automatic cleanup (later)
 
-
-
 # This limit may get capped in some browsers
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=365*2)
 
@@ -61,36 +59,9 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///info.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app) 
 
-# Error handlers: return consistent structured JSON error responses
-@app.errorhandler(HTTPException)
-def handle_http_error(e):
-    return jsonify({
-        "error": e.name,
-        "message": e.description,
-        "status": e.code,
-    }), e.code
 
-@app.errorhandler(SQLAlchemyError)
-def handle_db_error(e):
-    app.logger.exception(e)
-    try:
-        db.session.rollback()
-    except Exception as e2:
-        app.logger.critical(f"Database rollback failed: {e2}")
-
-    return jsonify({
-        "error": "Database Error",
-        "message": "An unexpected database error occurred"
-    }), 500
-
-@app.errorhandler(Exception)
-def handle_unexpected_error(e):
-    app.logger.exception(e)
-    return jsonify({
-        "error": "Internal Server Error",
-        "message": "An unexpected error occurred"
-    }), 500
-
+register_error_handlers(app, db)
+limiter = add_rate_limiter(app)
 
 import backend.routes.solo
 from backend.background import start_scheduler
