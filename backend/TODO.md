@@ -19,7 +19,6 @@ with app.app_context():
 
 - Add unit and integration tests
 - Add rate limiting
-- Setup systematic routine database cleanup
 - Change to Postgres for deployment (database only contains test data, so no need to migrate)
 - Optional caching
 

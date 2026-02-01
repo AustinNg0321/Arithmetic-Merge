@@ -14,17 +14,12 @@ OPERATOR_SPAWN_RATE = 0.67
 INCLUDED_DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 GENERATED_TILES_PER_TURN = 2
 
-# Should be run periodically
-def cleanup_expired_sessions() -> None:
-    now = datetime.now()
-    User.query.filter(User.created_at + timedelta(days=365*2) < now).delete()
-    db.session.commit()
-
 def is_valid_element(el: any) -> bool:
     return isinstance(el, int) or el in INCLUDED_OPERATIONS or el == SPACE
 
 def is_valid_state(state: str) -> bool:
     return state == "In Progress" or state == "Won" or state == "Lost"
+
 
 def construct_game(grid) -> Game:
     return Game(grid, NUM_ROWS, NUM_COLS, INCLUDED_OPERATIONS, OPERATOR_SPAWN_RATE, INCLUDED_DIGITS, GENERATED_TILES_PER_TURN)
@@ -108,9 +103,6 @@ def ensure_session() -> None:
             return
 
     create_new_session()
-    if random() < 0.001:
-        cleanup_expired_sessions()
-
 
 @app.route("/api/", methods=["GET"])
 def index():

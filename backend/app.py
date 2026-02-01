@@ -60,7 +60,6 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///info.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app) 
 
-
 # Error handlers: return consistent structured JSON error responses
 @app.errorhandler(HTTPException)
 def handle_http_error(e):
@@ -75,9 +74,9 @@ def handle_db_error(e):
     app.logger.exception(e)
     try:
         db.session.rollback()
-    except:
-        app.logger.critical("Database rollback failed")
-    
+    except Exception as e2:
+        app.logger.critical(f"Database rollback failed: {e2}")
+
     return jsonify({
         "error": "Database Error",
         "message": "An unexpected database error occurred"
@@ -92,8 +91,10 @@ def handle_unexpected_error(e):
     }), 500
 
 
-# no circular import if solo.py is imported here
 import backend.routes.solo
+from backend.background import start_scheduler
+
+start_scheduler()
 
 if __name__ == '__main__':
     app.run(host="localhost", port=5000)
