@@ -7,6 +7,22 @@ from ...utils.game import (
     # MULTIPLICATION,
 )
 
+NUM_ROWS = 6
+NUM_COLS = 7
+INCLUDED_OPERATIONS = [ADDITION, SUBTRACTION]
+OPERATOR_SPAWN_RATE = 0.67
+INCLUDED_DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+GENERATED_TILES_PER_TURN = 2
+
+EMPTY_GRID = [
+    [SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE],
+    [SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE],
+    [SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE],
+    [SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE],
+    [SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE],
+    [SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE],
+]
+
 NO_OPERATIONS_GRID = [
     [1, SPACE, 2],
     [SPACE, 3, SPACE],
@@ -45,10 +61,11 @@ GOT_67_BUT_NO_MOVES_GRID = [
     [1, 1001],
 ]
 
+def construct_game(grid, num_rows, num_cols) -> Game:
+    return Game(grid, num_rows, num_cols, INCLUDED_OPERATIONS, OPERATOR_SPAWN_RATE, INCLUDED_DIGITS, GENERATED_TILES_PER_TURN)
 
 def make_game(grid):
-    g = Game(len(grid), len(grid[0]))
-    g.set_game(grid)
+    g = construct_game(grid, len(grid), len(grid[0]))
     g.update_blank_spaces()
     return g
 
@@ -63,17 +80,9 @@ def assert_blank_spaces_consistent(game):
     assert set(game.get_blank_spaces()) == blanks
 
 
-def test_game_initial_state():
-    g = Game(6, 7)
-
-    assert g._grid == [
-        [SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE],
-        [SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE],
-        [SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE],
-        [SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE],
-        [SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE],
-        [SPACE, SPACE, SPACE, SPACE, SPACE, SPACE, SPACE],
-    ]
+def test_game_blank():
+    g = make_game(EMPTY_GRID)
+    assert g._grid == EMPTY_GRID
     assert len(g.get_blank_spaces()) == 42
     assert_blank_spaces_consistent(g)
 

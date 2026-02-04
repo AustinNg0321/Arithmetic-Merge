@@ -1,7 +1,8 @@
 import pytest
 import uuid
-from backend.utils.util import generate_user_id, dict_to_game
-from backend.utils.game_manager import GameManager
+from backend.utils.util import generate_user_id, is_valid_state
+from backend.utils.game import Game
+from backend.routes.solo import construct_game, construct_grid, NUM_ROWS, NUM_COLS
 from backend.utils.game import SPACE
 
 IN_PROGRESS_GRID = [
@@ -11,6 +12,15 @@ IN_PROGRESS_GRID = [
     [SPACE, 12, SPACE, 13, SPACE, 14, SPACE],
     [15, SPACE, 16, SPACE, 17, SPACE, 18],
     [SPACE, 19, SPACE, 20, SPACE, 21, SPACE],
+]
+
+WON_GRID = [
+    [67, 1001, 1001, 1001, 1001, 1001, 1001],
+    [1001, 1001, 1001, 1001, 1001, 1001, 1001],
+    [1001, 1001, 1001, 1001, 1001, 1001, 1001],
+    [1001, 1001, 1001, 1001, 1001, 1001, 1001],
+    [1001, 1001, 1001, 1001, 1001, 1001, 1001],
+    [1001, 1001, 1001, 1001, 1001, 1001, 1001],
 ]
 
 LOST_GRID = [
@@ -29,70 +39,28 @@ def test_generate_user_id_is_valid_uuid4():
     assert isinstance(user_id, str)
     assert parsed.version == 4
 
-def test_dict_to_game_in_progress_6x7():
-    game_dict = {
-        "grid": IN_PROGRESS_GRID,
-        "round": 5,
-        "state": "In Progress",
-    }
+class TestState:
+    def test_valid_states(self):
+        assert is_valid_state("In Progress") is True
+        assert is_valid_state("Won") is True
+        assert is_valid_state("Lost") is True
 
-    gm = dict_to_game(game_dict, 6, 7)
+        assert is_valid_state("in progress") is False
+        assert is_valid_state("win") is False
+        assert is_valid_state("  lost  ") is False
+    
+    def test_start_game_valid_state(self):
+        cur_game = construct_game(construct_grid(NUM_ROWS, NUM_COLS, SPACE))
+        assert is_valid_state(cur_game.get_state()) is True
 
-    assert isinstance(gm, GameManager)
-    assert gm.get_game().get_game() == IN_PROGRESS_GRID
-    assert gm.get_state() == "In Progress"
-    assert gm._round_num == 5
+    def test_in_progress_game_valid_state(self):
+        cur_game = construct_game(IN_PROGRESS_GRID)
+        assert is_valid_state(cur_game.get_state()) is True
+    
+    def test_won_game_valid_state(self):
+        cur_game = construct_game(WON_GRID)
+        assert is_valid_state(cur_game.get_state()) is True
 
-    # Valid moves should be recomputed, not serialized
-    assert set(gm._valid_moves) == {"up", "down", "left", "right"}
-
-def test_dict_to_game_lost():
-    game_dict = {
-        "grid": LOST_GRID,
-        "round": 12,
-        "state": "Lost",
-    }
-
-    gm = dict_to_game(game_dict, 6, 7)
-
-    assert isinstance(gm, GameManager)
-    assert gm.get_game().get_game() == LOST_GRID
-    assert gm.get_state() == "Lost"
-    assert gm._round_num == 12
-
-    # Lost games must have no valid moves
-    assert gm._valid_moves == []
-
-def test_dict_to_game_restores_basic_state():
-    game_dict = {
-        "grid": [
-            [1, SPACE, 2],
-            [SPACE, 3, SPACE],
-        ],
-        "round": 5,
-        "state": "in_progress",
-    }
-
-    gm = dict_to_game(game_dict, 2, 3)
-
-    assert isinstance(gm, GameManager)
-    assert gm.get_game().get_game() == game_dict["grid"]
-    assert gm.get_round() == 5
-    assert gm.get_state() == "in_progress"
-
-def test_dict_to_game_updates_valid_moves():
-    game_dict = {
-        "grid": [
-            [1, SPACE],
-            [SPACE, 2],
-        ],
-        "round": 1,
-        "state": "in_progress",
-    }
-
-    gm = dict_to_game(game_dict, 2, 2)
-    valid_moves = gm.get_valid_moves()
-
-    assert isinstance(valid_moves, list)
-    assert len(valid_moves) > 0
-    assert set(valid_moves).issubset({"up", "down", "left", "right"})
+    def test_lost_game_valid_state(self):
+        cur_game = construct_game(LOST_GRID)
+        assert is_valid_state(cur_game.get_state()) is True
