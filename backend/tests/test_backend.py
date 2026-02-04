@@ -1,15 +1,17 @@
 import pytest
-from backend.app import app, db
+from backend.extensions import db
+from backend.app import create_app
 from backend.models.user import User
 from backend.utils.game import SPACE
 from backend.routes.solo import NUM_ROWS, NUM_COLS
 
 @pytest.fixture
 def client():
-    # Use a clean in-memory database for tests
-    app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///:memory:"
-    app.config['WTF_CSRF_ENABLED'] = False
+    app = create_app({
+        "SQLALCHEMY_DATABASE_URI": "sqlite:///test.db",
+        "TESTING": True,
+        "WTF_CSRF_ENABLED": False,
+    })
 
     with app.test_client() as client:
         with app.app_context():
@@ -17,6 +19,11 @@ def client():
         yield client
         with app.app_context():
             db.drop_all()
+
+def get_user_id(client):
+    response = client.get("/api/")
+    data = response.get_json()
+    return data.get("user_id")
 
 def get_solo_game(client):
     response = client.get("/api/solo")
@@ -52,16 +59,15 @@ def test_get_solo(client):
 def test_restart(client):
     client.get("/api/")  # create session
 
-    # Make one move so abandoned counter can increment
     client.post("/api/move", data="up")
     response = client.post("/api/restart")
     assert response.status_code == 200
+
     new_game = response.get_json()
     assert new_game["state"] == "In Progress"
     assert new_game["round_num"] == 1
 
-    # Abandoned games counter should have incremented
-    user = db.session.get(User, new_game.get("user_id"))
+    user = db.session.get(User, get_user_id(client))
     assert user.num_abandoned_games == 1
 
 def test_make_valid_move(client):
@@ -71,6 +77,7 @@ def test_make_valid_move(client):
 
     response = client.post("/api/move", data="up")
     assert response.status_code == 200
+
     game_after = response.get_json()
     assert game_after["round_num"] == round_before + 1
     assert game_after["state"] in {"In Progress", "Won", "Lost"}
@@ -81,12 +88,13 @@ def test_make_invalid_move(client):
 
     response = client.post("/api/move", data="invalid_direction")
     assert response.status_code == 400
+
     data = response.get_json()
     assert "Invalid move" in data["message"] or "Bad Request" in data["error"]
 
 def test_move_on_finished_game(client):
     client.get("/api/")  # create session
-    user = User.query.first()
+    user = db.session.get(User, get_user_id(client))
     game_dict = user.get_game_dict()
 
     # simulate a finished game
@@ -96,6 +104,7 @@ def test_move_on_finished_game(client):
 
     response = client.post("/api/move", data="up")
     assert response.status_code == 400
+
     data = response.get_json()
     assert "already ended" in data["message"]
 
@@ -105,6 +114,7 @@ def test_multiple_moves_and_round_increment(client):
     for i in range(rounds):
         response = client.post("/api/move", data="up")
         assert response.status_code == 200
+
         game = response.get_json()
         assert game["round_num"] == i + 2  # initial round is 1
 
