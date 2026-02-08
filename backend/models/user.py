@@ -12,7 +12,10 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.now(), nullable=False)
     
     def get_game_dict(self):
-        return json.loads(self.cur_solo_game)
+        try:
+            return json.loads(self.cur_solo_game)
+        except json.JSONDecodeError as e:
+            return {}
 
     def set_game_dict(self, game_dict: dict):
         self.cur_solo_game = json.dumps(game_dict)

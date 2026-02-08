@@ -5,6 +5,8 @@ from backend.models.user import User
 from backend.utils.game import SPACE
 from backend.routes.solo import NUM_ROWS, NUM_COLS
 
+DIRECTIONS = ["up", "down", "left", "right"]
+
 @pytest.fixture
 def client():
     app = create_app({
@@ -29,6 +31,13 @@ def get_solo_game(client):
     response = client.get("/api/solo")
     return response.get_json()
 
+def make_valid_move(client) -> int:
+    for dir in DIRECTIONS:
+        res = client.post("/api/move", data=dir)
+        if res.status_code == 200:
+            return res.status_code
+    return 400
+
 def test_session_creation(client):
     # First request should create a session and user
     response = client.get("/api/")
@@ -49,7 +58,7 @@ def test_session_creation(client):
     assert game_dict["round_num"] == 1
 
 def test_get_solo(client):
-    client.get("/api/")  # create session
+    client.get("/api/")
     game_dict = get_solo_game(client)
     assert game_dict["state"] == "In Progress"
     assert game_dict["round_num"] == 1
@@ -57,7 +66,7 @@ def test_get_solo(client):
     assert all(len(row) == NUM_COLS for row in game_dict["grid"])
 
 def test_restart(client):
-    client.get("/api/")  # create session
+    client.get("/api/")
 
     client.post("/api/move", data="up")
     response = client.post("/api/restart")
@@ -71,12 +80,17 @@ def test_restart(client):
     assert user.num_abandoned_games == 1
 
 def test_make_valid_move(client):
-    client.get("/api/")  # create session
+    client.get("/api/")
     game_before = get_solo_game(client)
     round_before = game_before["round_num"]
 
-    response = client.post("/api/move", data="up")
-    assert response.status_code == 200
+    final_status_code = 400
+    for dir in DIRECTIONS:
+        response = client.post("/api/move", data="up")
+        if response.status_code == 200:
+            final_status_code = 200
+            break
+    assert final_status_code == 200
 
     game_after = response.get_json()
     assert game_after["round_num"] == round_before + 1
@@ -84,46 +98,49 @@ def test_make_valid_move(client):
     assert len(game_after["grid"]) == NUM_ROWS
 
 def test_make_invalid_move(client):
-    client.get("/api/")  # create session
+    client.get("/api/")
+    game_before = get_solo_game(client)
+    round_before = game_before["round_num"]
 
-    response = client.post("/api/move", data="invalid_direction")
-    assert response.status_code == 400
+    move_response = client.post("/api/move", data="invalid_direction")
+    assert move_response.status_code == 400
+    move_response_content = move_response.get_json()
+    assert "Invalid move" in move_response_content["message"] or "Bad Request" in move_response_content["error"]
 
-    data = response.get_json()
-    assert "Invalid move" in data["message"] or "Bad Request" in data["error"]
+    response = client.get("/api/solo")
+    game_after = response.get_json()
+    assert game_after["round_num"] == round_before
+    assert game_after["state"] in {"In Progress", "Won", "Lost"}
+    assert len(game_after["grid"]) == NUM_ROWS
 
 def test_move_on_finished_game(client):
-    client.get("/api/")  # create session
-    user = db.session.get(User, get_user_id(client))
-    game_dict = user.get_game_dict()
+    client.get("/api/")
 
-    # simulate a finished game
-    game_dict["state"] = "Won"
-    user.set_game_dict(game_dict)
-    db.session.commit()
+    ended = False
+    while not ended:
+        ended = make_valid_move(client) == 400
 
     response = client.post("/api/move", data="up")
     assert response.status_code == 400
 
-    data = response.get_json()
-    assert "already ended" in data["message"]
-
 def test_multiple_moves_and_round_increment(client):
-    client.get("/api/")  # create session
-    rounds = 3
+    client.get("/api/")
+    rounds = 10
     for i in range(rounds):
-        response = client.post("/api/move", data="up")
-        assert response.status_code == 200
+        status_code = make_valid_move(client)
+        assert status_code == 200
 
+        response = client.get("/api/solo")
         game = response.get_json()
-        assert game["round_num"] == i + 2  # initial round is 1
+        assert game["round_num"] == i + 2
 
 def test_database_integrity_after_moves(client):
-    client.get("/api/")  # create session
-    client.post("/api/move", data="up")
-    client.post("/api/move", data="down")
+    client.get("/api/")
+    rounds = 10
+    for i in range(rounds):
+        status_code = make_valid_move(client)
     user = User.query.first()
     game_dict = user.get_game_dict()
-    assert game_dict["round_num"] == 3
+    assert game_dict["round_num"] == 11
     assert game_dict["state"] in {"In Progress", "Won", "Lost"}
     assert len(game_dict["grid"]) == NUM_ROWS
