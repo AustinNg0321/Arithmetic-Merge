@@ -1,11 +1,62 @@
-import seedrandom from "seedrandom";
-
 // Constants for operations - NEED TO CHANGE IF CHANGING THE MAXIMUM/MINIMUM VALUES
 export const ADDITION = "+";
 export const SUBTRACTION = "-";
 export const MULTIPLICATION = "*";
 export const SPACE = " ";
 export const OPERATORS = [ADDITION, SUBTRACTION];
+
+class DeterministicRNG {
+  constructor(seed) {
+    this._state = this.#hashSeed(seed);
+    if (this._state === 0) {
+      this._state = 0x6d2b79f5;
+    }
+  }
+
+  #hashSeed(seed) {
+    const text = seed == null ? "" : String(seed);
+    const bytes = new TextEncoder().encode(text);
+    let hash = 0x811c9dc5;
+    for (const b of bytes) {
+      hash ^= b;
+      hash = Math.imul(hash, 0x01000193) >>> 0;
+    }
+    return hash >>> 0;
+  }
+
+  #nextUint32() {
+    let x = this._state >>> 0;
+    x ^= (x << 13) >>> 0;
+    x ^= x >>> 17;
+    x ^= (x << 5) >>> 0;
+    this._state = x >>> 0;
+    return this._state;
+  }
+
+  random() {
+    return this.#nextUint32() / 4294967296;
+  }
+
+  choice(sequence) {
+    if (sequence.length === 0) {
+      throw new Error("Cannot choose from an empty sequence");
+    }
+    const idx = Math.floor(this.random() * sequence.length);
+    return sequence[idx];
+  }
+
+  sample(population, k) {
+    const items = [...population];
+    if (k < 0 || k > items.length) {
+      throw new Error("Sample larger than population or is negative");
+    }
+    for (let i = items.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(this.random() * (i + 1));
+      [items[i], items[j]] = [items[j], items[i]];
+    }
+    return items.slice(0, k);
+  }
+}
 
 export function constructGrid(numRows, numCols, item) {
   return Array.from({ length: numRows }, () => Array.from({ length: numCols }, () => item));
@@ -130,15 +181,6 @@ function gridEquals(a, b) {
   return true;
 }
 
-function sampleWithoutReplacement(populationSize, k, rng) {
-  const items = Array.from({ length: populationSize }, (_, idx) => idx);
-  for (let i = populationSize - 1; i > 0; i -= 1) {
-    const j = Math.floor(rng() * (i + 1));
-    [items[i], items[j]] = [items[j], items[i]];
-  }
-  return items.slice(0, k);
-}
-
 export class Game {
   constructor(
     grid,
@@ -159,7 +201,7 @@ export class Game {
     this._generated_digits = generatedDigits;
     this._num_generated_tiles = numGeneratedTiles;
     this._seed = seed;
-    this._rng = seedrandom(String(seed));
+    this._rng = new DeterministicRNG(seed);
   }
 
   getNumRows() {
@@ -231,17 +273,18 @@ export class Game {
   generateTiles() {
     const numBlankSpaces = this._blank_spaces.length;
     const numTilesToGenerate = Math.min(numBlankSpaces, this._num_generated_tiles);
-    const selectedIndices = sampleWithoutReplacement(numBlankSpaces, numTilesToGenerate, this._rng);
+    const selectedIndices = this._rng.sample(
+      Array.from({ length: numBlankSpaces }, (_, idx) => idx),
+      numTilesToGenerate,
+    );
 
     for (const currentIndex of selectedIndices) {
       const [row, col] = this._blank_spaces[currentIndex];
 
-      if (this._rng() <= this._prob_operations) {
-        const opIndex = Math.floor(this._rng() * this._generated_operations.length);
-        this._grid[row][col] = this._generated_operations[opIndex];
+      if (this._rng.random() <= this._prob_operations) {
+        this._grid[row][col] = this._rng.choice(this._generated_operations);
       } else {
-        const digitIndex = Math.floor(this._rng() * this._generated_digits.length);
-        this._grid[row][col] = this._generated_digits[digitIndex];
+        this._grid[row][col] = this._rng.choice(this._generated_digits);
       }
     }
 

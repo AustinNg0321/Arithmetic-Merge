@@ -16,3 +16,5 @@ venv/
 
 # The instance folder containing the database
 instance/
+
+coverage/

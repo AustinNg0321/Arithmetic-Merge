@@ -1,4 +1,5 @@
 import random
+import math
 
 # Constants for operations - NEED TO CHANGE IF CHANGING THE MAXIMUM/MINIMUM VALUES
 ADDITION = "+"
@@ -6,6 +7,53 @@ SUBTRACTION = "-"
 MULTIPLICATION = "*"
 SPACE = " "
 OPERATORS = [ADDITION, SUBTRACTION]
+
+
+class DeterministicRNG:
+    """Cross-platform deterministic RNG based on xorshift32 + UTF-8 FNV-1a seed hashing."""
+    def __init__(self, seed) -> None:
+        self._state = self._hash_seed(seed)
+        if self._state == 0:
+            self._state = 0x6D2B79F5
+
+    @staticmethod
+    def _hash_seed(seed) -> int:
+        if seed is None:
+            seed_str = ""
+        else:
+            seed_str = str(seed)
+        h = 0x811C9DC5
+        for b in seed_str.encode("utf-8"):
+            h ^= b
+            h = (h * 0x01000193) & 0xFFFFFFFF
+        return h
+
+    def _next_uint32(self) -> int:
+        x = self._state
+        x ^= ((x << 13) & 0xFFFFFFFF)
+        x ^= (x >> 17)
+        x ^= ((x << 5) & 0xFFFFFFFF)
+        x &= 0xFFFFFFFF
+        self._state = x
+        return x
+
+    def random(self) -> float:
+        return self._next_uint32() / 4294967296.0
+
+    def choice(self, seq):
+        if len(seq) == 0:
+            raise IndexError("Cannot choose from an empty sequence")
+        idx = math.floor(self.random() * len(seq))
+        return seq[idx]
+
+    def sample(self, population, k: int):
+        items = list(population)
+        if k < 0 or k > len(items):
+            raise ValueError("Sample larger than population or is negative")
+        for i in range(len(items) - 1, 0, -1):
+            j = math.floor(self.random() * (i + 1))
+            items[i], items[j] = items[j], items[i]
+        return items[:k]
 
 def construct_grid(num_rows: int, num_cols: int, item: int) -> list[list[int]]:
     return [[item for j in range(num_cols)] for i in range(num_rows)]
@@ -90,7 +138,22 @@ def out_of_bounds(grid: list[list[int]], upper_bound: int = 1000, lower_bound: i
 
 # Class implementing the core logic Arithmetic Merge game
 class Game:
-    def __init__(self, grid: list[list[int]], num_rows: int, num_cols: int, generated_operations: list[str], prob_operations: float, generated_digits: list[int], num_generated_tiles: int) -> None:
+    def __init__(self, grid: list[list[int]], *args) -> None:
+        # Backward-compatible constructor:
+        # 1) Game(grid, num_rows, num_cols, ops, prob_ops, digits, num_tiles)
+        # 2) Game(grid, rng, num_rows, num_cols, ops, prob_ops, digits, num_tiles)
+        if len(args) == 6:
+            rng = DeterministicRNG("")
+            num_rows, num_cols, generated_operations, prob_operations, generated_digits, num_generated_tiles = args
+        elif len(args) == 7:
+            rng, num_rows, num_cols, generated_operations, prob_operations, generated_digits, num_generated_tiles = args
+            if rng is None:
+                rng = DeterministicRNG("")
+        else:
+            raise TypeError(
+                "Game expects either 7 args (legacy) or 8 args (with rng), including grid"
+            )
+
         self._grid = grid
         self._num_rows = num_rows # 6
         self._num_cols = num_cols # 7
@@ -99,6 +162,7 @@ class Game:
         self._prob_operations = prob_operations # 0.67
         self._generated_digits = generated_digits # [0-9]
         self._num_generated_tiles = num_generated_tiles # (2) - 4
+        self._rng = rng
     
     def get_num_rows(self):
         return self._num_rows
@@ -153,15 +217,15 @@ class Game:
 
         # Select random indices without replacement and remove in reverse order
         # to avoid O(n) cost of pop() multiple times
-        selected_indices = random.sample(range(num_blank_spaces), num_tiles_to_generate)
+        selected_indices = self._rng.sample(range(num_blank_spaces), num_tiles_to_generate)
 
         for cur_index in selected_indices:
             cur_pos = self._blank_spaces[cur_index]
 
-            if random.random() <= self._prob_operations:
-                self._grid[cur_pos[0]][cur_pos[1]] = random.choice(self._generated_operations)
+            if self._rng.random() <= self._prob_operations:
+                self._grid[cur_pos[0]][cur_pos[1]] = self._rng.choice(self._generated_operations)
             else:
-                self._grid[cur_pos[0]][cur_pos[1]] = random.choice(self._generated_digits)
+                self._grid[cur_pos[0]][cur_pos[1]] = self._rng.choice(self._generated_digits)
 
         # Remove selected indices in reverse order to avoid index shifting issues
         for idx in sorted(selected_indices, reverse=True):
