@@ -1,5 +1,5 @@
 import { Geist, Geist_Mono } from "next/font/google";
-import { RefreshProvider } from "./refreshContext";
+import { GameProvider } from "./solo/gameContext";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,9 +21,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased m-2`}>
-        <RefreshProvider>
+        <GameProvider>
           {children}
-        </RefreshProvider>
+        </GameProvider>
       </body>
     </html>
   );

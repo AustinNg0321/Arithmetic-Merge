@@ -141,14 +141,6 @@ def parse_seed_and_moves() -> tuple[str, list[str]]:
     return str(seed), moves
 
 
-def parse_verified_flag() -> bool:
-    payload = get_request_json()
-    verified = payload.get("verified")
-    if not isinstance(verified, bool):
-        abort(400, description="Missing or invalid field: verified (bool)")
-    return verified
-
-
 def verification_failed_response(db, user: User):
     user.num_abandoned_games += 1
     db.session.commit()
@@ -209,16 +201,13 @@ def register_routes(app, db, limiter):
         user = get_user(db, session.get("user_id"))
         if not user:
             abort(404, description="User not found")
-
-        verified = parse_verified_flag()
-
-        if not verified:
-            seed, moves = parse_seed_and_moves()
-            replay_valid, state = simulate_game(seed, moves)
-            if not replay_valid:
-                return verification_failed_response(db, user)
-            if state != "In Progress":
-                abort(400, description="Game is already terminal; restart only accepts in-progress games")
+            
+        seed, moves = parse_seed_and_moves()
+        replay_valid, state = simulate_game(seed, moves)
+        if not replay_valid:
+            return verification_failed_response(db, user)
+        if state != "In Progress":
+            abort(400, description="Game is already terminal; restart only accepts in-progress games")
 
         user.num_abandoned_games += 1
         db.session.commit()

@@ -1,11 +1,14 @@
 "use client";
-import { use, Suspense, useEffect, useState } from "react";
+
+import { useEffect, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 import "./globals.css";
-import { useRefresh } from "./refreshContext";
 
-function Statistics({ messagePromise }) {
-    const data = use(messagePromise);
+const STATISTICS_KEY = "statistics";
+const STATISTICS_UPDATED_EVENT = "statistics-updated";
+const STATISTICS_URL = "http://localhost:5000/api/statistics";
+
+function Statistics({ data }) {
     return (
         <div className="mb-5">
             <ul>
@@ -18,36 +21,127 @@ function Statistics({ messagePromise }) {
     );
 }
 
-// change the link in prod
-function fetchStatistics() {
-    return fetch("http://localhost:5000/api/statistics", {
-        credentials: "include",
-    }).then(res => {
-        if (!res.ok) {
-            throw new Error(`HTTP error: ${res.status}`);
-        }
-        return res.json();
-    });
+function readStatisticsFromStorage() {
+    const rawValue = window.sessionStorage.getItem(STATISTICS_KEY);
+    if (!rawValue) {
+        return null;
+    }
+
+    const parsedValue = JSON.parse(rawValue);
+    if (
+        !parsedValue ||
+        typeof parsedValue.user_id !== "string" ||
+        typeof parsedValue.wins !== "number" ||
+        typeof parsedValue.losses !== "number" ||
+        typeof parsedValue.abandoned !== "number"
+    ) {
+        throw new Error("Invalid cached statistics payload");
+    }
+
+    return parsedValue;
 }
 
-// should be refetching every time the statistics change
-// refreshStatistics is set to true whenever the statistics change, false immediately after refresh
-export default function StatisticsContainer() {
-    const {refreshStatistics, setRefreshStatistics} = useRefresh();
-    const [messagePromise, setMessagePromise] = useState(() => fetchStatistics());
-    
-    useEffect(() => {
-        if (refreshStatistics) {
-            setMessagePromise(fetchStatistics());
-            setRefreshStatistics(false);
+function writeStatisticsToStorage(statistics) {
+    window.sessionStorage.setItem(STATISTICS_KEY, JSON.stringify(statistics));
+}
+
+function broadcastStatistics(statistics) {
+    window.dispatchEvent(new CustomEvent(STATISTICS_UPDATED_EVENT, { detail: statistics }));
+}
+
+async function fetchStatistics() {
+    const response = await fetch(STATISTICS_URL, {
+        credentials: "include",
+    });
+
+    if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`);
+    }
+
+    return response.json();
+}
+
+function StatisticsContainerInner() {
+    const [statistics, setStatistics] = useState(() => {
+        if (typeof window === "undefined") {
+            return null;
         }
-    }, [refreshStatistics]);
-    
+
+        try {
+            return readStatisticsFromStorage();
+        } catch (error) {
+            console.error("Failed to read cached statistics", error);
+            return null;
+        }
+    });
+    const [error, setError] = useState(null);
+
+    useEffect(() => {
+        let isActive = true;
+
+        if (statistics) {
+            function handleStatisticsUpdated(event) {
+                setStatistics(event.detail);
+                setError(null);
+            }
+
+            window.addEventListener(STATISTICS_UPDATED_EVENT, handleStatisticsUpdated);
+
+            return () => {
+                isActive = false;
+                window.removeEventListener(STATISTICS_UPDATED_EVENT, handleStatisticsUpdated);
+            };
+        }
+
+        fetchStatistics()
+            .then((data) => {
+                if (!isActive) {
+                    return;
+                }
+                try {
+                    writeStatisticsToStorage(data);
+                } catch (writeError) {
+                    console.error("Failed to cache fetched statistics", writeError);
+                }
+                broadcastStatistics(data);
+                setStatistics(data);
+                setError(null);
+            })
+            .catch((loadError) => {
+                if (!isActive) {
+                    return;
+                }
+                setError(loadError);
+            });
+
+        function handleStatisticsUpdated(event) {
+            setStatistics(event.detail);
+            setError(null);
+        }
+
+        window.addEventListener(STATISTICS_UPDATED_EVENT, handleStatisticsUpdated);
+
+        return () => {
+            isActive = false;
+            window.removeEventListener(STATISTICS_UPDATED_EVENT, handleStatisticsUpdated);
+        };
+    }, [statistics]);
+
+    if (error) {
+        throw error;
+    }
+
+    if (!statistics) {
+        return <p className="mb-5">Loading ...</p>;
+    }
+
+    return <Statistics data={statistics} />;
+}
+
+export default function StatisticsContainer() {
     return (
         <ErrorBoundary fallback={<p className="mb-5">Failed to fetch data</p>}>
-            <Suspense fallback={<p className="mb-5">Loading ...</p>}>
-                <Statistics messagePromise={messagePromise} />
-            </Suspense>
+            <StatisticsContainerInner />
         </ErrorBoundary>
     );
 }
