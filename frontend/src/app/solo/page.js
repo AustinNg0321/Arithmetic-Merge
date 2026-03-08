@@ -43,7 +43,7 @@ function Game({ curGame }) {
 }
 
 export default function Solo() {
-    const { game, move, restart } = useGame();
+    const { game, move, restart, isRestarting } = useGame();
 
     useEffect(() => {
         function handleKeyDown(e) {
@@ -82,10 +82,14 @@ export default function Solo() {
             <Game curGame={game} />
             <p className="mb-4 text-lg">{game.state}</p>
             <button
-                className="restart pl-5 pr-5 pt-2.5 pb-2.5 text-lg rounded-md border
-                bg-emerald-500 text-white cursor-pointer hover:bg-emerald-700"
+                className={`${isRestarting ? 'opacity-50 cursor-not-allowed' 
+                    : 'cursor-pointer hover:bg-emerald-700'}
+                restart pl-5 pr-5 pt-2.5 pb-2.5 text-lg 
+                rounded-md border bg-emerald-500 text-white`}
+                // "restart pl-5 pr-5 pt-2.5 pb-2.5 text-lg rounded-md border
+                // bg-emerald-500 text-white cursor-pointer hover:bg-emerald-700"
                 onClick={restart}
-            >
+                disabled={isRestarting}>
                 Restart
             </button>
         </>

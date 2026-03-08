@@ -2,11 +2,18 @@
 
 import { useEffect, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
+import { useRefresh } from "./refreshContext";
 import "./globals.css";
 
 const STATISTICS_KEY = "statistics";
 const STATISTICS_UPDATED_EVENT = "statistics-updated";
 const STATISTICS_URL = "http://localhost:5000/api/statistics";
+const DEFAULT_STATISTICS = {
+    user_id: "-",
+    wins: "-",
+    losses: "-",
+    abandoned: "-",
+};
 
 function Statistics({ data }) {
     return (
@@ -62,6 +69,8 @@ async function fetchStatistics() {
 }
 
 function StatisticsContainerInner() {
+    const {refetched, setRefetched} = useRefresh();
+    const [error, setError] = useState(null);
     const [statistics, setStatistics] = useState(() => {
         if (typeof window === "undefined") {
             return null;
@@ -74,27 +83,27 @@ function StatisticsContainerInner() {
             return null;
         }
     });
-    const [error, setError] = useState(null);
 
     useEffect(() => {
         let isActive = true;
+        
+        function handleStatisticsUpdated(event) {
+            setStatistics(event.detail);
+            setError(null);
+        }
 
-        if (statistics) {
-            function handleStatisticsUpdated(event) {
-                setStatistics(event.detail);
-                setError(null);
-            }
-
+        if (statistics && refetched) {
             window.addEventListener(STATISTICS_UPDATED_EVENT, handleStatisticsUpdated);
-
             return () => {
                 isActive = false;
                 window.removeEventListener(STATISTICS_UPDATED_EVENT, handleStatisticsUpdated);
             };
         }
 
+        // add fallback to sessionStorage if refetching fails
         fetchStatistics()
             .then((data) => {
+                setRefetched(true);
                 if (!isActive) {
                     return;
                 }
@@ -114,11 +123,6 @@ function StatisticsContainerInner() {
                 setError(loadError);
             });
 
-        function handleStatisticsUpdated(event) {
-            setStatistics(event.detail);
-            setError(null);
-        }
-
         window.addEventListener(STATISTICS_UPDATED_EVENT, handleStatisticsUpdated);
 
         return () => {
@@ -132,7 +136,7 @@ function StatisticsContainerInner() {
     }
 
     if (!statistics) {
-        return <p className="mb-5">Loading ...</p>;
+        return <Statistics data={DEFAULT_STATISTICS} />;
     }
 
     return <Statistics data={statistics} />;

@@ -218,6 +218,7 @@ export function GameProvider({ children }) {
     const verifiedKeysRef = useRef(new Set());
     const [game, setGame] = useState(null);
     const [moveList, setMoveList] = useState([]);
+    const [isRestarting, setIsRestarting] = useState(false);
 
     const verifyGame = useCallback(async (targetGame = gameRef.current) => {
         if (!targetGame) {
@@ -314,6 +315,9 @@ export function GameProvider({ children }) {
     };
 
     const restart = useCallback(() => {
+        setIsRestarting(true);
+        setTimeout(() => setIsRestarting(false), 10000);
+
         const curGame = gameRef.current;
         if (curGame) {
             if (curGame.getState() === "In Progress") {
@@ -364,6 +368,11 @@ export function GameProvider({ children }) {
             return;
         }
 
+        setIsRestarting(true);
+        setTimeout(() => {
+            setIsRestarting(false);
+        }, 10000);
+
         try {
             window.localStorage.removeItem(STORAGE_KEY);
         } catch (error) {
@@ -380,7 +389,7 @@ export function GameProvider({ children }) {
     }, [game, restart, verifyGame]);
 
     return (
-        <GameContext.Provider value={{ game, gameRef, moveList, move, restart }}>
+        <GameContext.Provider value={{ game, gameRef, moveList, move, restart, isRestarting, setIsRestarting }}>
             {children}
         </GameContext.Provider>
     );
