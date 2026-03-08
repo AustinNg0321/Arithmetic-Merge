@@ -6,7 +6,6 @@ Detailed information about the backend can be found in backend/TODO.md.
 
 ## Improvements:
 
-- Testing
-- Switch to Postgres
 - Prepare for deployment
-- Prevent replay attacks
+- Testing frontend and backend
+- Possibly Prevent replay attacks

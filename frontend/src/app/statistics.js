@@ -129,7 +129,7 @@ function StatisticsContainerInner() {
             isActive = false;
             window.removeEventListener(STATISTICS_UPDATED_EVENT, handleStatisticsUpdated);
         };
-    }, [statistics]);
+    }, [statistics, refetched, setRefetched]);
 
     if (error) {
         throw error;

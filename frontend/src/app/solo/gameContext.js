@@ -222,17 +222,18 @@ export function GameProvider({ children }) {
 
     const verifyGame = useCallback(async (targetGame = gameRef.current) => {
         if (!targetGame) {
-            return;
+            return false;
         }
 
         const verificationSnapshot = createVerificationSnapshot(targetGame, moveListRef.current);
         const verificationKey = JSON.stringify(verificationSnapshot);
 
-        if (
-            verifiedKeysRef.current.has(verificationKey) ||
-            inFlightVerificationKeysRef.current.has(verificationKey)
-        ) {
-            return;
+        if (verifiedKeysRef.current.has(verificationKey)) {
+            return true;
+        }
+
+        if (inFlightVerificationKeysRef.current.has(verificationKey)) {
+            return false;
         }
 
         inFlightVerificationKeysRef.current.add(verificationKey);
@@ -253,8 +254,10 @@ export function GameProvider({ children }) {
 
             verifiedKeysRef.current.add(verificationKey);
             await updateStatisticsFromOutcome(targetGame.getState());
+            return true;
         } catch (error) {
             console.error("Failed to verify solo game", error);
+            return false;
         } finally {
             inFlightVerificationKeysRef.current.delete(verificationKey);
         }
@@ -262,7 +265,7 @@ export function GameProvider({ children }) {
 
     const abandonGame = useCallback(async (targetGame = gameRef.current) => {
         if (!targetGame) {
-            return;
+            return false;
         }
 
         try {
@@ -282,8 +285,10 @@ export function GameProvider({ children }) {
             }
 
             await updateStatisticsFromOutcome("In Progress");
+            return true;
         } catch (error) {
             console.error("Failed to abandon solo game", error);
+            return false;
         }
     }, []);
 
@@ -314,17 +319,22 @@ export function GameProvider({ children }) {
         setGame(createSnapshot(curGame));
     };
 
-    const restart = useCallback(() => {
+    const restart = useCallback(async () => {
         setIsRestarting(true);
         setTimeout(() => setIsRestarting(false), 10000);
 
+        let canRestart = true;
         const curGame = gameRef.current;
         if (curGame) {
             if (curGame.getState() === "In Progress") {
-                void abandonGame(curGame);
+                canRestart = await abandonGame(curGame);
             } else {
-                void verifyGame(curGame);
+                canRestart = await verifyGame(curGame);
             }
+        }
+
+        if (!canRestart) {
+            return;
         }
 
         const nextGame = createGame();
@@ -369,9 +379,7 @@ export function GameProvider({ children }) {
         }
 
         setIsRestarting(true);
-        setTimeout(() => {
-            setIsRestarting(false);
-        }, 10000);
+        setTimeout(() => setIsRestarting(false), 10000);
 
         try {
             window.localStorage.removeItem(STORAGE_KEY);
@@ -380,11 +388,8 @@ export function GameProvider({ children }) {
         }
 
         void verifyGame(gameRef.current);
-
-        const timeoutId = window.setTimeout(() => {
-            restart();
-        }, 2000);
-
+        
+        const timeoutId = window.setTimeout(() => restart(), 2000);
         return () => window.clearTimeout(timeoutId);
     }, [game, restart, verifyGame]);
 

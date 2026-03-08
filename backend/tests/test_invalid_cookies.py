@@ -1,4 +1,6 @@
 import pytest
+import os
+from dotenv import load_dotenv
 from flask import session
 from datetime import datetime, timedelta
 from backend.models.user import User
@@ -7,8 +9,10 @@ from backend.app import create_app
 
 @pytest.fixture
 def client():
+    load_dotenv()
+
     app = create_app({
-        "SQLALCHEMY_DATABASE_URI": "sqlite:///test.db",
+        "SQLALCHEMY_DATABASE_URI": os.getenv("TEST_DATABASE_URI"),
         "TESTING": True,
         "WTF_CSRF_ENABLED": False,
     })

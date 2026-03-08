@@ -1,5 +1,7 @@
 import pytest
 import time
+import os
+from dotenv import load_dotenv
 from backend.models.user import User
 from backend.utils.game import SPACE
 from backend.routes.solo import NUM_ROWS, NUM_COLS
@@ -10,8 +12,10 @@ DIRECTIONS = ["up", "down", "left", "right"]
 
 @pytest.fixture
 def client():
+    load_dotenv()
+
     app = create_app({
-        "SQLALCHEMY_DATABASE_URI": "sqlite:///test.db",
+        "SQLALCHEMY_DATABASE_URI": os.getenv("TEST_DATABASE_URI"),
         "TESTING": True,
         "WTF_CSRF_ENABLED": False,
     })

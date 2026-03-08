@@ -1,6 +1,8 @@
 import random
 import json
 import pytest
+import os
+from dotenv import load_dotenv
 from backend.models.user import User
 from backend.extensions import db
 from backend.app import create_app
@@ -11,8 +13,10 @@ DIRECTIONS = ["up", "down", "left", "right"]
 
 @pytest.fixture
 def client():
+    load_dotenv()
+
     app = create_app({
-        "SQLALCHEMY_DATABASE_URI": "sqlite:///test.db",
+        "SQLALCHEMY_DATABASE_URI": os.getenv("TEST_DATABASE_URI"),
         "TESTING": True,
         "WTF_CSRF_ENABLED": False,
     })

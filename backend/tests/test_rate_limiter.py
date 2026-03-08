@@ -1,15 +1,19 @@
 import time
 import pytest
+import os
+from dotenv import load_dotenv
 from backend.models.user import User
 from backend.extensions import db, limiter
 from backend.app import create_app
 from backend.utils.game import SPACE
-from backend.routes.solo import safe_construct_game, NUM_ROWS, NUM_COLS
+from backend.routes.solo import NUM_ROWS, NUM_COLS
 
 @pytest.fixture
 def client():
+    load_dotenv()
+
     app = create_app({
-        "SQLALCHEMY_DATABASE_URI": "sqlite:///test.db",
+        "SQLALCHEMY_DATABASE_URI": os.getenv("TEST_DATABASE_URI"),
         "TESTING": True,
         "WTF_CSRF_ENABLED": False,
     })
