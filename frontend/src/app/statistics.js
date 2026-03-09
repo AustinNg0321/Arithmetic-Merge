@@ -7,7 +7,7 @@ import "./globals.css";
 
 const STATISTICS_KEY = "statistics";
 const STATISTICS_UPDATED_EVENT = "statistics-updated";
-const STATISTICS_URL = "http://localhost:5000/api/statistics";
+const STATISTICS_URL = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/statistics`;
 const DEFAULT_STATISTICS = {
     user_id: "-",
     wins: "-",

@@ -16,8 +16,8 @@ const OPERATOR_SPAWN_RATE = 0.67;
 const INCLUDED_DIGITS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
 const GENERATED_TILES_PER_TURN = 2;
 const VALID_DIRECTIONS = new Set(["up", "down", "left", "right"]);
-const VERIFY_GAME_URL = "http://localhost:5000/api/verify";
-const RESTART_GAME_URL = "http://localhost:5000/api/restart";
+const VERIFY_GAME_URL = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/verify`;
+const RESTART_GAME_URL = `${process.env.NEXT_PUBLIC_BACKEND_URL}/api/restart`;
 const STORAGE_KEY = "solo-game-state";
 const STATISTICS_KEY = "statistics";
 const STATISTICS_UPDATED_EVENT = "statistics-updated";
@@ -136,7 +136,7 @@ function restoreStoredGame() {
 }
 
 async function fetchStatistics() {
-    const response = await fetch("http://localhost:5000/api/statistics", {
+    const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/statistics`, {
         credentials: "include",
     });
 
