@@ -1,4 +1,4 @@
-from backend.extensions import db
+from extensions import db
 from datetime import datetime
 
 # session expires in 365*2 days (about 2 years)

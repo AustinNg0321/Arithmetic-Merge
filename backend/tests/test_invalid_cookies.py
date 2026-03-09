@@ -3,9 +3,9 @@ import os
 from dotenv import load_dotenv
 from flask import session
 from datetime import datetime, timedelta
-from backend.models.user import User
-from backend.app import db
-from backend.app import create_app
+from models.user import User
+from app import db
+from app import create_app
 
 @pytest.fixture
 def client():

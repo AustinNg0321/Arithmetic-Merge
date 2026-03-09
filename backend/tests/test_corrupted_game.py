@@ -2,11 +2,11 @@ import random
 import os
 from dotenv import load_dotenv
 import pytest
-from backend.models.user import User
-from backend.extensions import db
-from backend.app import create_app
-from backend.utils.game import ADDITION
-from backend.routes.solo import NUM_ROWS, NUM_COLS
+from models.user import User
+from extensions import db
+from app import create_app
+from utils.game import ADDITION
+from routes.solo import NUM_ROWS, NUM_COLS
 
 @pytest.fixture
 def app_client():

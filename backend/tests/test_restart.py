@@ -2,11 +2,11 @@ import pytest
 import time
 import os
 from dotenv import load_dotenv
-from backend.models.user import User
-from backend.utils.game import SPACE
-from backend.routes.solo import NUM_ROWS, NUM_COLS
-from backend.extensions import db
-from backend.app import create_app
+from models.user import User
+from utils.game import SPACE
+from routes.solo import NUM_ROWS, NUM_COLS
+from extensions import db
+from app import create_app
 
 DIRECTIONS = ["up", "down", "left", "right"]
 

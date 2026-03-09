@@ -1,7 +1,7 @@
 import atexit
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta
-from backend.models.user import User
+from models.user import User
 
 def cleanup_expired_sessions(app, db):
     with app.app_context():

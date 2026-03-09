@@ -2,9 +2,9 @@ from datetime import datetime, timedelta
 import uuid
 from flask import abort, jsonify, request, session
 from sqlalchemy.exc import IntegrityError
-from backend.models.user import User
-from backend.utils.game import ADDITION, DeterministicRNG, Game, SPACE, SUBTRACTION, construct_grid
-from backend.utils.util import generate_user_id
+from models.user import User
+from utils.game import ADDITION, DeterministicRNG, Game, SPACE, SUBTRACTION, construct_grid
+from utils.util import generate_user_id
 
 NUM_ROWS = 6
 NUM_COLS = 7

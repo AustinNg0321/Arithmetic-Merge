@@ -2,9 +2,9 @@ import pytest
 import os
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
-from backend.background import cleanup_expired_sessions
-from backend.models.user import User
-from backend.app import db, create_app
+from background import cleanup_expired_sessions
+from models.user import User
+from app import db, create_app
 
 @pytest.fixture
 def app_client():

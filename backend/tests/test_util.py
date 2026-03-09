@@ -1,9 +1,9 @@
 import pytest
 import uuid
-from backend.utils.util import generate_user_id, is_valid_state
-from backend.utils.game import Game
-from backend.routes.solo import construct_game, construct_grid, NUM_ROWS, NUM_COLS
-from backend.utils.game import SPACE
+from utils.util import generate_user_id, is_valid_state
+from utils.game import Game
+from routes.solo import construct_game, construct_grid, NUM_ROWS, NUM_COLS
+from utils.game import SPACE
 
 IN_PROGRESS_GRID = [
     [1, SPACE, 2, SPACE, 3, SPACE, 4],

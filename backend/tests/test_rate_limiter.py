@@ -2,11 +2,11 @@ import time
 import pytest
 import os
 from dotenv import load_dotenv
-from backend.models.user import User
-from backend.extensions import db, limiter
-from backend.app import create_app
-from backend.utils.game import SPACE
-from backend.routes.solo import NUM_ROWS, NUM_COLS
+from models.user import User
+from extensions import db, limiter
+from app import create_app
+from utils.game import SPACE
+from routes.solo import NUM_ROWS, NUM_COLS
 
 @pytest.fixture
 def client():

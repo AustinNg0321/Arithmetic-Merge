@@ -4,9 +4,9 @@ from dotenv import load_dotenv
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.middleware.proxy_fix import ProxyFix
-from backend.extensions import db, limiter
-from backend.error.error_handlers import register_error_handlers
-from backend.routes.solo import register_routes
+from extensions import db, limiter
+from error.error_handlers import register_error_handlers
+from routes.solo import register_routes
 import os
 
 def create_app(config=None):
@@ -36,8 +36,8 @@ def create_app(config=None):
 
     register_error_handlers(app, db)
 
-    import backend.routes.solo
-    from backend.background import start_scheduler
+    import routes.solo
+    from background import start_scheduler
 
     if not app.config.get("TESTING"):
         limiter.init_app(app)
