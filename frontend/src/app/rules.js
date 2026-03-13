@@ -87,28 +87,34 @@ export function Rules() {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
-        <>  
-            <div className="m-8 max-w-md p-6 bg-white rounded-xl shadow-sm border border-gray-200">
+        <>
+            <section
+                id="rules"
+                className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm"
+            >
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl font-bold text-gray-800">How to Play</h2>
                     <button
                         onClick={() => setIsOpen(true)}
-                        className="w-6 h-6 rounded-full bg-gray-200 text-gray-600 text-sm font-bold hover:bg-gray-300"
+                        className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-sm font-bold text-gray-600 transition-colors hover:bg-gray-200"
                     >
                         ?
                     </button>
                 </div>
                 <BriefRules />
-            </div>
+            </section>
 
-            {/* modal overlay */}
             {isOpen && (
-                <div className="overflow-y-auto fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center  z-50">
-                    <div className="bg-white rounded-xl p-6 max-w-lg w-full mx-4">
-                        <h2 className="text-2xl font-bold mb-4">Full Rules</h2>
-                            <AdditionalRules />
-                        <button className="mt-5 pl-5 pr-5 pt-2.5 pb-2.5 text-lg rounded-md border bg-emerald-500 
-                        text-white cursor-pointer hover:bg-emerald-700"onClick={() => setIsOpen(false)}>Close</button>
+                <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 px-4 py-8">
+                    <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-lg">
+                        <h2 className="mb-4 text-2xl font-bold">Full Rules</h2>
+                        <AdditionalRules />
+                        <button
+                            className="mt-5 rounded-md border bg-emerald-500 px-5 py-2.5 text-lg text-white transition-colors hover:bg-emerald-700"
+                            onClick={() => setIsOpen(false)}
+                        >
+                            Close
+                        </button>
                     </div>
                 </div>
             )}

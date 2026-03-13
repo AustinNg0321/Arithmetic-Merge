@@ -16,15 +16,24 @@ const DEFAULT_STATISTICS = {
 };
 
 function Statistics({ data }) {
+    const metrics = [
+        { label: "Wins", value: data.wins },
+        { label: "Losses", value: data.losses },
+        { label: "Abandoned", value: data.abandoned },
+    ];
+
     return (
-        <div className="mb-5">
-            <ul>
-                <li>UserID: {data.user_id}</li>
-                <li>Wins: {data.wins}</li>
-                <li>Losses: {data.losses}</li>
-                <li>Abandoned Games: {data.abandoned}</li>
-            </ul>
-        </div>
+        <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {metrics.map((metric) => (
+                <div
+                    key={metric.label}
+                    className="rounded-xl border border-gray-100 bg-white p-4 shadow-sm"
+                >
+                    <p className="text-3xl font-bold text-emerald-600">{metric.value}</p>
+                    <p className="mt-2 text-sm text-gray-500">{metric.label}</p>
+                </div>
+            ))}
+        </section>
     );
 }
 
@@ -144,7 +153,7 @@ function StatisticsContainerInner() {
 
 export default function StatisticsContainer() {
     return (
-        <ErrorBoundary fallback={<p className="mb-5">Failed to fetch data</p>}>
+        <ErrorBoundary fallback={<p className="text-gray-500">Failed to fetch data</p>}>
             <StatisticsContainerInner />
         </ErrorBoundary>
     );
