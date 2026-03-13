@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { SPACE } from "../../../utils/game";
 import { useGame } from "./gameContext";
@@ -141,34 +141,62 @@ function Back() {
 
 export default function Solo() {
     const { game, move, restart, isRestarting } = useGame();
+    const moveRef = useRef(move);
 
     useEffect(() => {
-        function handleKeyDown(e) {
-            switch (e.key) {
-                case "ArrowUp":
-                    e.preventDefault();
-                    move("up");
-                    break;
-                case "ArrowDown":
-                    e.preventDefault();
-                    move("down");
-                    break;
-                case "ArrowLeft":
-                    e.preventDefault();
-                    move("left");
-                    break;
-                case "ArrowRight":
-                    e.preventDefault();
-                    move("right");
-                    break;
-                default:
-                    break;
+        moveRef.current = move;
+    }, [move]);
+
+    useEffect(() => {
+        const handleKeyDown = (e) => {
+            const directions = {
+                ArrowUp: "up",
+                ArrowDown: "down",
+                ArrowLeft: "left",
+                ArrowRight: "right",
+            };
+
+            if (directions[e.key]) {
+                e.preventDefault();
+                moveRef.current(directions[e.key]);
             }
-        }
+        };
+
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        const handleTouchStart = (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+        };
+
+        const handleTouchEnd = (e) => {
+            const dx = e.changedTouches[0].clientX - touchStartX;
+            const dy = e.changedTouches[0].clientY - touchStartY;
+            const absDx = Math.abs(dx);
+            const absDy = Math.abs(dy);
+
+            if (Math.max(absDx, absDy) < 30) {
+                return;
+            }
+
+            if (absDx > absDy) {
+                moveRef.current(dx > 0 ? "right" : "left");
+            } else {
+                moveRef.current(dy > 0 ? "down" : "up");
+            }
+        };
 
         window.addEventListener("keydown", handleKeyDown);
-        return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [move]);
+        window.addEventListener("touchstart", handleTouchStart, { passive: true });
+        window.addEventListener("touchend", handleTouchEnd, { passive: true });
+
+        return () => {
+            window.removeEventListener("keydown", handleKeyDown);
+            window.removeEventListener("touchstart", handleTouchStart);
+            window.removeEventListener("touchend", handleTouchEnd);
+        };
+    }, []);
 
     if (!game) {
         return <p>Loading Game ...</p>;
