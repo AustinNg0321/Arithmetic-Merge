@@ -32,7 +32,7 @@ function Game({ curGame }) {
                 <div key={r} className="row flex">
                     {row.map((cell, c) => (
                         <div key={c} className="cell flex items-center justify-center font-bold m-1
-                        bg-blue-100 border border-gray-300 aspect-square size-1/12 lg:size-16
+                        bg-blue-100 border border-gray-300 text-gray-800 aspect-square size-1/12 lg:size-16
                         text-md lg:text-2xl rounded-sm lg:rounded-lg">
                             {parse(cell)}
                         </div>
