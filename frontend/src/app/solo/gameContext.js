@@ -135,7 +135,7 @@ function restoreStoredGame() {
     }
 }
 
-async function fetchStatistics() {
+export async function fetchStatistics() {
     const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}/api/statistics`, {
         credentials: "include",
     });
@@ -147,7 +147,7 @@ async function fetchStatistics() {
     return response.json();
 }
 
-function readStatisticsFromStorage() {
+export function readStatisticsFromStorage() {
     const rawValue = window.sessionStorage.getItem(STATISTICS_KEY);
     if (!rawValue) {
         return null;
@@ -167,7 +167,7 @@ function readStatisticsFromStorage() {
     return parsedValue;
 }
 
-function writeStatisticsToStorage(statistics) {
+export function writeStatisticsToStorage(statistics) {
     window.sessionStorage.setItem(STATISTICS_KEY, JSON.stringify(statistics));
 }
 
@@ -180,36 +180,59 @@ function syncStatistics(statistics) {
     broadcastStatistics(statistics);
 }
 
-async function updateStatisticsFromOutcome(outcome) {
-    try {
-        const currentStatistics = readStatisticsFromStorage();
-        if (!currentStatistics) {
-            throw new Error("No cached statistics available");
-        }
+export async function updateStatisticsFromOutcome(outcome) {
+    const currentStatistics = readStatisticsFromStorage();
 
+    if (currentStatistics) {
         const nextStatistics = {
             ...currentStatistics,
             wins: currentStatistics.wins + (outcome === "Won" ? 1 : 0),
             losses: currentStatistics.losses + (outcome === "Lost" ? 1 : 0),
             abandoned: currentStatistics.abandoned + (outcome === "In Progress" ? 1 : 0),
         };
-
         syncStatistics(nextStatistics);
         return;
-    } catch (error) {
-        console.error("Failed to update cached statistics", error);
     }
 
+    // Cache miss — fetch from server. Rejection propagates to the caller.
     const fetchedStatistics = await fetchStatistics();
-
-    try {
-        syncStatistics(fetchedStatistics);
-    } catch (error) {
-        console.error("Failed to cache fetched statistics after update fallback", error);
-        broadcastStatistics(fetchedStatistics);
-    }
+    syncStatistics(fetchedStatistics);
 }
 
+
+export async function verifyOnServer(seed, moves) {
+    const response = await fetch(VERIFY_GAME_URL, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ seed, moves }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Verification failed with status ${response.status}`);
+    }
+
+    return true;
+}
+
+export async function abandonOnServer(seed, moves) {
+    const response = await fetch(RESTART_GAME_URL, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ seed, moves }),
+    });
+
+    if (!response.ok) {
+        throw new Error(`Abandon request failed with status ${response.status}`);
+    }
+
+    return true;
+}
 
 export function GameProvider({ children }) {
     const gameRef = useRef(null);
@@ -239,19 +262,7 @@ export function GameProvider({ children }) {
         inFlightVerificationKeysRef.current.add(verificationKey);
 
         try {
-            const response = await fetch(VERIFY_GAME_URL, {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(verificationSnapshot),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Verification failed with status ${response.status}`);
-            }
-
+            await verifyOnServer(targetGame.getSeed(), moveListRef.current);
             verifiedKeysRef.current.add(verificationKey);
             await updateStatisticsFromOutcome(targetGame.getState());
             return true;
@@ -269,21 +280,7 @@ export function GameProvider({ children }) {
         }
 
         try {
-            const response = await fetch(RESTART_GAME_URL, {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(
-                    createVerificationSnapshot(targetGame, moveListRef.current),
-                ),
-            });
-
-            if (!response.ok) {
-                throw new Error(`Abandon request failed with status ${response.status}`);
-            }
-
+            await abandonOnServer(targetGame.getSeed(), moveListRef.current);
             await updateStatisticsFromOutcome("In Progress");
             return true;
         } catch (error) {

@@ -1,172 +1,132 @@
+"""test_restart.py — 100% path coverage for POST /api/restart"""
 import pytest
-import time
-import os
-from dotenv import load_dotenv
-from models.user import User
-from utils.game import SPACE
-from routes.solo import NUM_ROWS, NUM_COLS
-from extensions import db
-from app import create_app
+from unittest.mock import patch
 
-DIRECTIONS = ["up", "down", "left", "right"]
+from tests.conftest import (
+    WON_GAME_2,
+    LOST_GAME_1,
+    ABANDONED_GAME_1,
+    ABANDONED_GAME_2,
+    INVAILD_GAME_1,
+)
 
-@pytest.fixture
-def client():
-    load_dotenv()
-
-    app = create_app({
-        "SQLALCHEMY_DATABASE_URI": os.getenv("TEST_DATABASE_URI"),
-        "TESTING": True,
-        "WTF_CSRF_ENABLED": False,
-    })
-
-    with app.test_client() as client:
-        with app.app_context():
-            db.create_all()
-        yield client
-        with app.app_context():
-            db.drop_all()
-
-def start_session(client):
-    res = client.get("/api/")
-    assert res.status_code == 200
-    return res.get_json()["user_id"]
-
-def get_user(db, user_id):
-    return db.session.get(User, user_id)
-
-def assert_fresh_game(game):
-    assert isinstance(game, dict)
-    assert game["state"] == "In Progress"
-    assert game["round_num"] == 1
-    assert len(game["grid"]) == NUM_ROWS
-    for row in game["grid"]:
-        assert len(row) == NUM_COLS
-
-def make_valid_move(client) -> int:
-    for dir in DIRECTIONS:
-        res = client.post("/api/move", data=dir)
-        if res.status_code == 200:
-            return res.status_code
-    return 400
+RESTART_URL = "/api/restart"
 
 
-# ---------- tests ----------
+# ===========================================================================
+# Valid Restarts
+# ===========================================================================
 
-def test_win_or_loss_increments_once_on_game_end(client):
-    user_id = start_session(client)
-
-    for i in range (10000):
-        make_valid_move(client)
-        user = db.session.get(User, user_id)
-        state = user.get_game_dict()["state"]
-
-        if state in {"Won", "Lost"}:
-            break
-
-    # RE-FETCH USER (important)
-    user = db.session.get(User, user_id)
-    game = user.get_game_dict()
-
-    assert game["state"] in {"Won", "Lost"}
-
-    if game["state"] == "Won":
-        assert user.num_wins == 1
-        assert user.num_losses == 0
-    else:
-        assert user.num_losses == 1
-        assert user.num_wins == 0
-
-
-def test_restart_resets_game(client):
-    user_id = start_session(client)
-
-    # make a move to change game state
-    make_valid_move(client)
-
-    res = client.post("/api/restart")
+def test_restart_in_progress_returns_200(client):
+    res = client.post(RESTART_URL, json=ABANDONED_GAME_1)
     assert res.status_code == 200
 
-    new_game = res.get_json()
-    assert_fresh_game(new_game)
 
-    # persisted
-    user = get_user(db, user_id)
-    assert user.get_game_dict() == new_game
+def test_restart_in_progress_increments_abandoned(client):
+    res = client.post(RESTART_URL, json=ABANDONED_GAME_1)
+    assert res.get_json()["abandoned"] == 1
 
-def test_restart_increments_abandoned_if_in_progress(client):
-    user_id = start_session(client)
 
-    make_valid_move(client)
-    client.post("/api/restart")
-
-    user = get_user(db, user_id)
-    assert user.num_abandoned_games == 1
-
-def test_restart_does_not_increment_if_game_ended(client):
-    user_id = start_session(client)
-    user = get_user(db, user_id)
-
-    ended = False
-    while not ended:
-        ended = make_valid_move(client) == 400
-
-    time.sleep(0.1)
-    client.post("/api/restart")
-    time.sleep(0.1)
-    user_id_copy = start_session(client)
-    user_copy = get_user(db, user_id_copy)
-    assert user.num_abandoned_games == 0
-
-def test_multiple_restarts_only_increment_once_per_game(client):
-    client.post("/api/move", data="left")
-    for i in range (2):
-        if i == 1:
-            time.sleep(10)
-        client.post("/api/restart")
-        user_id = start_session(client)
-        user = get_user(db, user_id)
-        assert user.num_abandoned_games == i + 1
-
-def test_restart_returns_valid_game_dict(client):
-    start_session(client)
-
-    res = client.post("/api/restart")
+def test_restart_in_progress_response_shape(client):
+    """Success response must contain the four stat keys and must NOT include 'verified'."""
+    res = client.post(RESTART_URL, json=ABANDONED_GAME_1)
     data = res.get_json()
+    for key in ("user_id", "wins", "losses", "abandoned"):
+        assert key in data, f"Expected key '{key}' missing from restart response"
+    assert "verified" not in data, "Restart response must not include 'verified'"
 
-    assert data["state"] == "In Progress"
-    assert data["round_num"] == 1
-    assert isinstance(data["grid"], list)
+
+def test_restart_does_not_increment_wins_or_losses(client):
+    res = client.post(RESTART_URL, json=ABANDONED_GAME_1)
+    data = res.get_json()
+    assert data["wins"] == 0
+    assert data["losses"] == 0
 
 
-def test_restart_without_prior_moves(client):
-    user_id = start_session(client)
-
-    res = client.post("/api/restart")
+def test_restart_empty_moves_increments_abandoned(client):
+    """Zero moves → game still In Progress → abandoned incremented."""
+    res = client.post(RESTART_URL, json={"seed": "test-seed", "moves": []})
+    data = res.get_json()
     assert res.status_code == 200
+    assert data["abandoned"] == 1
 
-    user = get_user(db, user_id)
-    assert user.num_abandoned_games == 1
 
-def test_restart_repairs_corrupted_game_data(client):
-    user_id = start_session(client)
-    user = db.session.get(User, user_id)
-    assert user is not None
+# ===========================================================================
+# Rejection of Terminal States (HTTP 400)
+# ===========================================================================
 
-    # Inject corrupted game data
-    user.set_game_dict({
-        "grid": "invalid_grid",
-        "state": "Won",        
-        "round_num": -999
-    })
-    db.session.commit()
+def test_restart_won_game_returns_400(client):
+    """A completed win must be rejected; use /api/verify for terminal games."""
+    res = client.post(RESTART_URL, json=WON_GAME_2)
+    assert res.status_code == 400
 
-    # Restart should repair corrupted game
-    res = client.post("/api/restart")
-    assert res.status_code == 200
 
-    user = db.session.get(User, user_id)
-    game_dict = user.get_game_dict()
-    assert_fresh_game(game_dict)
-    assert user.num_abandoned_games == 1
+def test_restart_lost_game_returns_400(client):
+    """A completed loss must be rejected; restart only accepts in-progress games."""
+    res = client.post(RESTART_URL, json=LOST_GAME_1)
+    assert res.status_code == 400
 
+
+# ===========================================================================
+# Validation & Error Handling
+# ===========================================================================
+
+def test_restart_tampered_moves_returns_verified_false(client):
+    """If simulate_game returns (False, None), the response includes verified=False
+    and abandoned is incremented (routes through verification_failed_response).
+
+    INVAILD_GAME_1 contains all valid direction strings but the sequence becomes
+    illegal mid-replay (a move not present in game.get_valid_moves()), causing
+    simulate_game to short-circuit with (False, None).
+    """
+    res = client.post(RESTART_URL, json=INVAILD_GAME_1)
+    data = res.get_json()
+    assert data["verified"] is False
+    assert data["abandoned"] == 1
+
+
+def test_restart_missing_seed_returns_400(client):
+    res = client.post(RESTART_URL, json={"moves": ["left"]})
+    assert res.status_code == 400
+
+
+def test_restart_missing_moves_returns_400(client):
+    res = client.post(RESTART_URL, json={"seed": "abc"})
+    assert res.status_code == 400
+
+
+def test_restart_moves_not_a_list_returns_400(client):
+    res = client.post(RESTART_URL, json={"seed": "abc", "moves": "left"})
+    assert res.status_code == 400
+
+
+def test_restart_invalid_direction_returns_400(client):
+    """A move string not in {up, down, left, right} must be rejected with 400."""
+    res = client.post(RESTART_URL, json={"seed": "abc", "moves": ["up", "forward"]})
+    assert res.status_code == 400
+
+
+def test_restart_user_not_found(client):
+    """Patch get_user to return None to exercise the 404 abort in restart_game.
+
+    The before_request hook will call the patched get_user (→ None) and then
+    call create_new_session to mint a fresh User.  The route handler then calls
+    get_user again (→ None) and aborts 404, which is the path under test.
+    """
+    with patch("routes.solo.get_user", return_value=None):
+        res = client.post(RESTART_URL, json={"seed": "abc", "moves": []})
+    assert res.status_code == 404
+
+
+# ===========================================================================
+# Accumulation Logic
+# ===========================================================================
+
+def test_restart_abandoned_count_accumulates(limiter_client):
+    """Two successful in-progress restarts must bring abandoned to 2."""
+    from extensions import limiter
+
+    limiter_client.post(RESTART_URL, json=ABANDONED_GAME_1)
+    limiter.reset()
+    res = limiter_client.post(RESTART_URL, json=ABANDONED_GAME_2)
+    assert res.get_json()["abandoned"] == 2

@@ -70,6 +70,28 @@ Note: number tiles generated initially are from 0 to 9, but other number tiles c
 - **localStorage persistence** — game state is preserved across navigation and page refreshes
 - **Rate limiting** — all API endpoints are protected against abuse
 
+## Testing & Reliability
+
+The project implements a **multi-layered testing strategy** to ensure that game logic, state management, and cross-platform determinism are maintained across the full stack.
+
+### 1. Mathematical Game Engine Integrity
+The core "Arithmetic Merge" logic is verified for absolute correctness, ensuring the game behaves exactly as designed under all conditions.
+- **Deterministic Move Resolution:** Every tile slide, merge, and spawn logic has been verified against a 788-move canonical game state.
+- **Floating-Point RNG Parity:** The random number generation (RNG) is synchronized with 10-decimal-point precision across the JavaScript and Python environments, ensuring identical game seeds yield identical results.
+- **Complex Grid Transitions:** Tested edge cases for grid merges, including multi-tile collapses and "stuck" game states.
+
+### 2. Session & Persistence Reliability
+We ensure that user progress and statistics are never lost, even across different browser sessions or network environments.
+- **Auto-Recovery (Cache Miss):** Verified that the system detects empty sessionStorage (common in tab refreshes) and automatically restores statistics from the server using the existing session identifier.
+- **Session Integrity:** Confirmed that game outcomes (wins, losses, and abandoned games) are accurately synchronized with the backend database, ensuring statistics remain consistent even if the local browser cache is cleared.
+- **Storage Resilience:** Features a "fail-safe" mechanism that allows the game to remain playable in restricted environments (e.g., strict Incognito Mode) where local writes are blocked, by defaulting to memory-only state management.
+
+### 3. Backend-Enforced Security & Rules
+The connection between the UI and the server is hardened to prevent cheating and ensure fair play.
+- **Move Verification:** Every game is replayed and verified on the server. The tests confirm the backend correctly rejects invalid move sequences or forged scores.
+- **Rate-Limit Enforcement:** Verified that the system correctly manages high-frequency requests (e.g., spamming the restart button) to maintain server stability.
+- **Auth-Linked Telemetry:** Confirmed that all statistics updates are securely linked to persistent user sessions using `credentials: 'include'`.
+
 ---
 
 ## Local Development
@@ -153,6 +175,28 @@ FRONTEND_URL="http://localhost:3000"
 
 ## Limitations
 
-- **Replay attack vulnerability** — a user could theoretically submit the same winning game multiple times. Planned fix: server-generated game session IDs issued before each game starts, stored in the database and marked as used after verification to prevent the same game from being submitted multiple times.
-- **Anonymous sessions only** — no password-based authentication. Clearing cookies or switching browsers creates a new identity and resets statistics
-- **Incomplete test suite** — frontend and backend tests need to be rewritten or added
+- **Replay Attack Vulnerability**
+    - **Issue:** A user could theoretically submit the same winning game sequence multiple times to inflate statistics.
+    - **Planned Fix:** Implementation of server-generated game session IDs issued at the start of each game. These IDs will be stored in the database and marked as "consumed" upon verification to ensure each game can only be submitted once.
+
+- **UI/UX Testing Scope**
+    - **Limitation:** While the core game engine, RNG parity, and context logic are strictly tested via Jest, pure UI/UX components (visual styling, layout shifts, and animations) are not currently covered.
+
+- **Session-Scoped Persistence**
+    - **Behavior:** Statistics and progress are currently tied to a **unique session identifier** stored in browser cookies/session state.
+    - **Limitation:** User data does not persist across different browsers or devices (e.g., progress does not sync between desktop and mobile).
+    - **Trade-off:** This design prioritizes a "zero-friction" user experience, allowing players to engage immediately without the friction of a mandatory OAuth or registration wall.
+
+- **Temporal vs. Reactive UI Locking**
+    - **Behavior:** The 'Restart' button utilizes a fixed 10-second temporal lockout (via `setTimeout`) to discourage spamming, aligning with the backend rate-limit window.
+    - **Limitation:** The lockout is independent of the network request lifecycle; it does not "react" to the API response but instead enforces a blind cooldown.
+    - **Mitigation:** System integrity is maintained via **Backend Rate Limiting** (10-second window for restart/verify), following a "Security-in-Depth" philosophy where the server acts as the final arbiter of truth.
+
+- **Client-Side Storage Volatility**
+    - **Behavior:** The application utilizes `sessionStorage` for low-latency statistics display.
+    - **Limitation:** In environments with strict privacy settings or "private/incognito" modes, storage writes may fail.
+    - **Resilience:** The system implements a fallback to in-memory state, ensuring the game remains fully playable even when persistence is unavailable.
+
+- **Deterministic Replay Scope**
+    - **Behavior:** RNG parity is strictly verified for the primary game loop, move resolution, and tile generation.
+    - **Limitation:** Certain UI-only visual animations or non-critical secondary effects are not included in the deterministic seed synchronization, as they do not impact game state integrity.

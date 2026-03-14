@@ -19,9 +19,16 @@
     "react-error-boundary": "^6.1.1"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.0",
+    "@babel/preset-env": "^7.29.0",
+    "@babel/preset-react": "^7.28.5",
     "@tailwindcss/postcss": "^4.1.18",
+    "babel-jest": "^30.3.0",
     "eslint": "^9",
     "eslint-config-next": "16.0.1",
+    "jest": "^30.3.0",
+    "jest-environment-jsdom": "^30.3.0",
+    "jest-fetch-mock": "^3.0.3",
     "tailwindcss": "^4.1.18"
   }
 }

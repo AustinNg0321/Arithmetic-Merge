@@ -1,9 +1,12 @@
 import { describe, test, expect } from "@jest/globals";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function readFile(...parts) {
-  return fs.readFileSync(path.join(process.cwd(), ...parts), "utf8");
+  return fs.readFileSync(path.resolve(__dirname, "..", ...parts), "utf8");
 }
 
 describe("solo page contracts", () => {
@@ -18,14 +21,11 @@ describe("solo page contracts", () => {
   test("keyboard controls map arrow keys to moves", () => {
     const source = readFile("src", "app", "solo", "page.js");
 
-    expect(source).toContain('case "ArrowUp"');
-    expect(source).toContain('move("up")');
-    expect(source).toContain('case "ArrowDown"');
-    expect(source).toContain('move("down")');
-    expect(source).toContain('case "ArrowLeft"');
-    expect(source).toContain('move("left")');
-    expect(source).toContain('case "ArrowRight"');
-    expect(source).toContain('move("right")');
+    expect(source).toContain('ArrowUp: "up"');
+    expect(source).toContain('ArrowDown: "down"');
+    expect(source).toContain('ArrowLeft: "left"');
+    expect(source).toContain('ArrowRight: "right"');
+    expect(source).toContain("directions[e.key]");
   });
 });
 

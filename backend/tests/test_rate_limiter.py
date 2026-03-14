@@ -1,78 +1,135 @@
+"""test_rate_limiter.py — rate-limit enforcement for all API endpoints.
+
+Limits under test
+-----------------
+/api/verify    : 1 per 10 seconds  (route-level @limiter.limit)
+/api/restart   : 1 per 10 seconds  (route-level @limiter.limit)
+/api/statistics: 2 per second      (default_limits on Limiter instance)
+
+Tests marked @pytest.mark.slow exercise the real time windows and add
+~10 s or ~1 s to the suite run.  Skip them with:  pytest -m "not slow"
+"""
 import time
 import pytest
-import os
-from dotenv import load_dotenv
-from models.user import User
-from extensions import db, limiter
-from app import create_app
-from utils.game import SPACE
-from routes.solo import NUM_ROWS, NUM_COLS
+from extensions import limiter
 
-@pytest.fixture
-def client():
-    load_dotenv()
+VERIFY_URL = "/api/verify"
+RESTART_URL = "/api/restart"
+STATS_URL = "/api/statistics"
 
-    app = create_app({
-        "SQLALCHEMY_DATABASE_URI": os.getenv("TEST_DATABASE_URI"),
-        "TESTING": True,
-        "WTF_CSRF_ENABLED": False,
-    })
-
-    # testing with limiter initialized
-    limiter.init_app(app)
-
-    with app.test_client() as client:
-        with app.app_context():
-            db.create_all()
-        yield client
-        with app.app_context():
-            db.drop_all()
-
-def get_user(db, user_id):
-    user = db.session.get(User, user_id)
-    assert user is not None
-    return user
+# Minimal valid POST body — passes parse_seed_and_moves without 400
+_BODY = {"seed": "test-seed", "moves": []}
 
 
-# limit: 2 per second
-def test_index_rate_limiting(client):
-    for i in range (2):
-        response = client.get("/api/")
-    third_response = client.get("/api/")
-    assert third_response.status_code == 429
+# ---------------------------------------------------------------------------
+# Autouse reset — guarantee a clean counter state before every test
+# ---------------------------------------------------------------------------
 
-    time.sleep(1)
-    fourth_response = client.get("/api/")
-    assert fourth_response.status_code == 200
+@pytest.fixture(autouse=True)
+def _reset_limiter(limiter_client):
+    limiter.reset()
+    yield
 
-# limit: 2 per second
-def test_index_rate_limiting(client):
-    for i in range (2):
-        response = client.get("/api/solo")
-    third_response = client.get("/api/solo")
-    assert third_response.status_code == 429
 
-    time.sleep(1)
-    fourth_response = client.get("/api/solo")
-    assert fourth_response.status_code == 200
+# ===========================================================================
+# /api/verify — 1 per 10 seconds
+# ===========================================================================
 
-# limit: 1 per 10 seconds
-def test_restart_rate_limiting(client):
-    response = client.post("/api/restart")
-    second_response = client.post("/api/restart")
-    assert second_response.status_code == 429
+def test_verify_first_call_succeeds(limiter_client):
+    res = limiter_client.post(VERIFY_URL, json=_BODY)
+    assert res.status_code == 200
 
-    time.sleep(10)
-    fourth_response = client.post("/api/restart")
-    assert fourth_response.status_code == 200
 
-# limit: 10 per second
-def test_move_rate_limiting(client):
-    for i in range (10):
-        response = client.post("/api/move", data="up")
-    limited_response = client.post("/api/move", data="down")
-    assert limited_response.status_code == 429
+def test_verify_second_call_within_window_returns_429(limiter_client):
+    limiter_client.post(VERIFY_URL, json=_BODY)
+    res = limiter_client.post(VERIFY_URL, json=_BODY)
+    assert res.status_code == 429
 
-    time.sleep(1)
-    reset_response = client.post("/api/move", data="up")
-    assert reset_response.status_code != 429
+
+def test_verify_after_reset_returns_200(limiter_client):
+    limiter_client.post(VERIFY_URL, json=_BODY)
+    limiter.reset()
+    res = limiter_client.post(VERIFY_URL, json=_BODY)
+    assert res.status_code == 200
+
+
+@pytest.mark.slow
+def test_verify_after_time_interval_returns_200(limiter_client):
+    limiter_client.post(VERIFY_URL, json=_BODY)
+    time.sleep(10.1)
+    res = limiter_client.post(VERIFY_URL, json=_BODY)
+    assert res.status_code == 200
+
+
+# ===========================================================================
+# /api/restart — 1 per 10 seconds
+# ===========================================================================
+
+def test_restart_first_call_succeeds(limiter_client):
+    res = limiter_client.post(RESTART_URL, json=_BODY)
+    assert res.status_code == 200
+
+
+def test_restart_second_call_within_window_returns_429(limiter_client):
+    limiter_client.post(RESTART_URL, json=_BODY)
+    res = limiter_client.post(RESTART_URL, json=_BODY)
+    assert res.status_code == 429
+
+
+def test_restart_after_reset_returns_200(limiter_client):
+    limiter_client.post(RESTART_URL, json=_BODY)
+    limiter.reset()
+    res = limiter_client.post(RESTART_URL, json=_BODY)
+    assert res.status_code == 200
+
+
+@pytest.mark.slow
+def test_restart_after_time_interval_returns_200(limiter_client):
+    limiter_client.post(RESTART_URL, json=_BODY)
+    time.sleep(10.1)
+    res = limiter_client.post(RESTART_URL, json=_BODY)
+    assert res.status_code == 200
+
+
+# ===========================================================================
+# /api/statistics — 2 per second (default limit)
+# ===========================================================================
+
+def test_statistics_allows_two_calls(limiter_client):
+    res1 = limiter_client.get(STATS_URL)
+    res2 = limiter_client.get(STATS_URL)
+    assert res1.status_code == 200
+    assert res2.status_code == 200
+
+
+def test_statistics_third_call_returns_429(limiter_client):
+    limiter_client.get(STATS_URL)
+    limiter_client.get(STATS_URL)
+    res = limiter_client.get(STATS_URL)
+    assert res.status_code == 429
+
+
+@pytest.mark.slow
+def test_statistics_resets_after_one_second(limiter_client):
+    limiter_client.get(STATS_URL)
+    limiter_client.get(STATS_URL)
+    time.sleep(1.1)
+    res = limiter_client.get(STATS_URL)
+    assert res.status_code == 200
+
+
+# ===========================================================================
+# Isolation — each endpoint's quota is independent
+# ===========================================================================
+
+def test_all_endpoints_have_independent_rate_limits(limiter_client):
+    """Exhausting /api/verify's quota must not block /api/restart or /api/statistics."""
+    limiter_client.post(VERIFY_URL, json=_BODY)
+    rate_limited = limiter_client.post(VERIFY_URL, json=_BODY)
+    assert rate_limited.status_code == 429
+
+    res_restart = limiter_client.post(RESTART_URL, json=_BODY)
+    assert res_restart.status_code == 200
+
+    res_stats = limiter_client.get(STATS_URL)
+    assert res_stats.status_code == 200
